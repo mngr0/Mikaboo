@@ -17,28 +17,6 @@
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.                  *
  *****************************************************************************/
 
-###Start###
-Use make file ( command $ make)  to generate the following Executable:
--"mikaboo.core.uarm"
--"mikaboo.stab.uarm"
-
-Start the emulator uarm using command:$ uarm
-
-Search the top bar for the machine configs button (the first one on
-the left) and choose the core file you just created "mikaboo.core.uarm", and the Symbol Table "mikaboo.stab.uarm"
-
-Save the configurations by clicking "Ok" 
-
-Press the power button to switch on the machine, and if you want to view the code
-in action, bring up Terminal by clicking 'Terminals' button then choose Terminal.
-
-Press the play button to run the machine.
-
-###Links###
-uArm Emulator http://mellotanica.github.io/uARM/
-
-Documentazione Phase1 MiKKABoO  http://www.cs.unibo.it/~renzo/so/mikaboo/phase1.pdf
-
-###Notes###
--we assume that uArm is in the following directory: /usr/include/
--we have added include stint.h in mikabooq.h to avoid problems made by uintptr_t
+Berni 		Simone	simone.berni2@studio.unibo.it
+Negrini 	Marco	marco.negrini6@studio.unibo.it
+Trestini	Dorotea	dorotea.trestini@studio.unibo.it

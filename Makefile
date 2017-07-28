@@ -1,3 +1,4 @@
+
 /*****************************************************************************
  * mikabooq.c Year 2017 v.0.1 Febbraio, 04 2017                              *
  * Copyright 2017 Simone Berni, Marco Negrini, Dorotea Trestini              *
@@ -17,28 +18,24 @@
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.                  *
  *****************************************************************************/
 
-###Start###
-Use make file ( command $ make)  to generate the following Executable:
--"mikaboo.core.uarm"
--"mikaboo.stab.uarm"
+CC = arm-none-eabi-gcc
+CFLAGS = -mcpu=arm7tdmi -c -I /usr/include/uarm/ -I lib 
+LD = arm-none-eabi-ld
+LDFLAGS = -T /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x /usr/include/uarm/crtso.o /usr/include/uarm/libuarm.o
 
-Start the emulator uarm using command:$ uarm
+all: mikaboo
 
-Search the top bar for the machine configs button (the first one on
-the left) and choose the core file you just created "mikaboo.core.uarm", and the Symbol Table "mikaboo.stab.uarm"
+mikaboo: p1test.o  mikabooq.o
+	$(LD) $(LDFLAGS) -o mikaboo mikabooq.o p1test.o
+	elf2uarm -k mikaboo
 
-Save the configurations by clicking "Ok" 
+mikabooq.o : mikabooq.c
+	$(CC) $(CFLAGS) -o mikabooq.o mikabooq.c
 
-Press the power button to switch on the machine, and if you want to view the code
-in action, bring up Terminal by clicking 'Terminals' button then choose Terminal.
-
-Press the play button to run the machine.
-
-###Links###
-uArm Emulator http://mellotanica.github.io/uARM/
-
-Documentazione Phase1 MiKKABoO  http://www.cs.unibo.it/~renzo/so/mikaboo/phase1.pdf
-
-###Notes###
--we assume that uArm is in the following directory: /usr/include/
--we have added include stint.h in mikabooq.h to avoid problems made by uintptr_t
+p1test.o : p1test.c 
+	$(CC) $(CFLAGS) -o p1test.o p1test.c
+	
+clean:
+	rm -rf *.o mikaboo
+cleanall:
+	rm -rf *.o mikaboo mikaboo.core.uarm mikaboo.stab.uarm
