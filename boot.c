@@ -1,11 +1,16 @@
 #include "const.h"
-#include "mikabooq.h"
 #include "nucleus.h"
 #include "arch.h"
 #include "uARMconst.h"
+#include "mikabooq.h"
 /*************************************************************************************************/
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
-/*************************************************************************************************/
+/*******
+******************************************************************************************/
+
+void * SSI;
+
+
 
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
@@ -24,22 +29,22 @@ void initArea(memaddr area, memaddr handler){
 state_t a1state, a2state, a3state;
 
 void intHandler(){
-return 0;
+
 }
 void tlbHandler(){
-return 0;
+
 }
 void pgmHandler(){
-return 0;
+
 }
 void sysBpHandler(){
-return 0;
+
 }
 void scheduler(){
-return 0;
+
 }
 void  ssi_entry(){
-return 0;
+
 }
 
 
@@ -59,18 +64,19 @@ int main() {
 	thread_init();
 	msgq_init();
 	//Inizializzo SSI
-	struct tcb_t *SSI=thread_alloc(starting_process);
+	SSI=thread_alloc(starting_process);
 	if(SSI==NULL)
 		//thread count==1
 		PANIC();
 	//abilita interrupt e kernel mode (CHECK)
-	SSI->t_s.cpsr=STATUS_ALL_INT_ENABLE((SSI->t_s.cpsr)|STATUS_SYS_MODE);
+	
+	((struct tcb_t* )SSI)->t_s.cpsr=STATUS_ALL_INT_ENABLE((((struct tcb_t* )SSI)->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
-	SSI->t_s.CP15_Control =CP15_DISABLE_VM (SSI->t_s.CP15_Control);
+	((struct tcb_t* )SSI)->t_s.CP15_Control =CP15_DISABLE_VM (((struct tcb_t* )SSI)->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	SSI->t_s.pc=SSI->t_s.v6=(memaddr) ssi_entry;
+	((struct tcb_t* )SSI)->t_s.pc=((struct tcb_t* )SSI)->t_s.v6=(memaddr) ssi_entry;
 	//assegno valore di SP(CHECK)
-	SSI->t_s.sp=RAM_TOP - FRAME_SIZE ;
+	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
 	scheduler();
     return 0;
 }
