@@ -1,17 +1,7 @@
-#include <const11.h>
-#include <tcb.e>
-#include <msg.e>
-#include <ssi.e>
-#include <boot.e>
-#include <scheduler.e>
-#include <interrupt.e>
-#include <exception.e>
-#include <prgTrap.e>
-#include <tlbTrap.e>
-#include <utils.h>
-#include <p2test.0.2.e>
+#include "const.h"
+#include "mikabooq.h"
+#include "nucleus.h"
 
-#include <libumps.e>
 /*************************************************************************************************/
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*************************************************************************************************/
