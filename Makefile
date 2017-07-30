@@ -7,17 +7,17 @@ LDFLAGS = -T /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x /usr/include/u
 all: mikaboo
 
 mikaboo: p2test.o  mikabooq.o boot.o
-	$(LD) $(LDFLAGS) -o mikaboo mikabooq.o p1test.o boot.o
+	$(LD) $(LDFLAGS) -o mikaboo mikabooq.o p2test.o boot.o
 	elf2uarm -k mikaboo
 
 mikabooq.o : mikabooq.c
 	$(CC) $(CFLAGS) -o mikabooq.o mikabooq.c
 
-mikabooq.o : boot.c
+boot.o : boot.c
 	$(CC) $(CFLAGS) -o boot.o boot.c
 
-p1test.o : p2test.c 
-	$(CC) $(CFLAGS) -o p2test.o p1test.c
+p2test.o : p2test.c 
+	$(CC) $(CFLAGS) -o p2test.o p2test.c
 	
 clean:
 	rm -rf *.o mikaboo

@@ -1,20 +1,41 @@
 #include "const.h"
 #include "mikabooq.h"
 #include "nucleus.h"
-
+#include "arch.h"
+#include "uARMconst.h"
 /*************************************************************************************************/
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*************************************************************************************************/
 
-HIDDEN state_t *newAreaSysBp   = (state_t *) SYSBK_NEWAREA;
-HIDDEN state_t *newAreaPgmTrap = (state_t *) PGMTRAP_NEWAREA;
-HIDDEN state_t *newAreaTLBTrap = (state_t *) TLB_NEWAREA;
-HIDDEN state_t *newAreaInts    = (state_t *) INT_NEWAREA;
+void initArea(memaddr area, memaddr handler){
+state_t *newArea = (state_t*) area;
+/* Memorizza il contenuto attuale del processore in newArea */
+STST(newArea);
+/* Setta pc alla funzione che gestirà l'eccezione */
+newArea->pc = handler;
+/* Setta sp a RAMTOP */
+newArea->sp = RAM_TOP;
+/* Setta il registro di Stato per mascherare tutti gli interrupt e si mette in kernel-mode. */
+newArea->cpsr = STATUS_ALL_INT_DISABLE((newArea->cpsr) | STATUS_SYS_MODE);
+/* Disabilita la memoria virtuale */
+newArea->CP15_Control =CP15_DISABLE_VM (newArea->CP15_Control);;
+}
 
 state_t a1state, a2state, a3state;
 
-tcb_t *tcb_SSI, *tcb_test, *tcb_init;
-tcb_t *tcb_1, *tcb_2, *tcb_3;
+void intHandler(){
+return 0;
+}
+void tlbHandler(){
+return 0;
+}
+void pgmHandler(){
+return 0;
+}
+void sysBpHandler(){
+return 0;
+}
+
 
 
 int main() {
@@ -26,77 +47,11 @@ int main() {
     /*   - imposta il registro di stato a mascherare tutti gli interrupts, disattivare la virtual memory, e passa in kernelmode.	*/
     /****************************************************************************************************************************/
 
-    //Specifico il gestore delle syscall e dei breakpoint
-    STST(newAreaSysBp);
-    newAreaSysBp->s_pc = newAreaSysBp->reg_t9 = (memaddr) sysBpHandler;
-    newAreaSysBp->reg_sp = RAMTOP;
-    /* Interrupt mascherati, Memoria Virtuale spenta, Kernel Mode attivo */
-    newAreaSysBp->status = (newAreaSysBp->status | STATUS_KUc) & ~STATUS_INT_UNMASKED & ~STATUS_VMp;
-
-    //specifico il gestore delle program trap
-    STST(newAreaPgmTrap);
-    newAreaPgmTrap->s_pc = newAreaPgmTrap->reg_t9 = (memaddr)prgHandler;
-    newAreaPgmTrap->reg_sp = RAMTOP;
-    newAreaPgmTrap->status = (newAreaPgmTrap->status | STATUS_KUc) & ~STATUS_INT_UNMASKED & ~STATUS_VMp;
-
-    //specifico il gestore delle tlb trap
-    STST(newAreaTLBTrap);
-    newAreaTLBTrap->s_pc = newAreaTLBTrap->reg_t9 = (memaddr) tlbHandler;
-    newAreaTLBTrap->reg_sp = RAMTOP;
-    newAreaTLBTrap->status = (newAreaTLBTrap->status | STATUS_KUc) & ~STATUS_INT_UNMASKED & ~STATUS_VMp;
-
-    //specifico ilgestore degli interrupt
-    STST(newAreaInts);
-    newAreaInts->s_pc = newAreaInts->reg_t9 = (memaddr) intsHandler;
-    newAreaInts->reg_sp = RAMTOP;
-    newAreaInts->status = (newAreaInts->status | STATUS_KUc) & ~STATUS_INT_UNMASKED & ~STATUS_VMp;
-
+initArea(INT_NEWAREA, (memaddr) intHandler);
+initArea(TLB_NEWAREA, (memaddr) tlbHandler);
+initArea(PGMTRAP_NEWAREA, (memaddr) pgmHandler);
+initArea(SYSBK_NEWAREA, (memaddr) sysBpHandler);
     /*****************************************/
     /* Inizializzazione delle strutture dati */
-    
-    initTcbs();
-    initMsg();
-    
-    /* ThreadCount = 0; */
-    currentThread = NULL;
-
-    /* Allocazione del thread init per tutti i processi orfani*/
-    if ((tcb_init = allocTcb()) == NULL)
-        PANIC();
-
-    /*********************************/
-    /* Instanziazione del thread SSI */
-    /*********************************/
-    if ((tcb_SSI = allocTcb()) == NULL)
-        PANIC();
-    (tcb_SSI->t_state).status &= ~STATUS_VMp;
-    (tcb_SSI->t_state).status &= ~STATUS_KUp; /* kernel mode */
-    (tcb_SSI->t_state).status |= STATUS_IEp | STATUS_INT_UNMASKED; /* tutti gli interrupt ablilitati */
-    (tcb_SSI->t_state).s_pc = (tcb_SSI->t_state).reg_t9 = (memaddr) SSI_function_entry_point;
-    (tcb_SSI->t_state).reg_sp = RAMTOP - FRAME_SIZE;
-    insertThread(&readyQueue, tcb_SSI);
-    /* ThreadCount = 1; */
-
-
-    /**********************************/
-    /* Instanziazione del thread test */
-    /**********************************/
-    tcb_test = allocTcb();
-    if ((tcb_test = allocTcb()) == NULL)
-        PANIC();
-    (tcb_test->t_state).status &= ~STATUS_VMp;
-    (tcb_test->t_state).status &= ~STATUS_KUp;
-    (tcb_test->t_state).status |= STATUS_IEp | STATUS_INT_UNMASKED;
-    (tcb_test->t_state).s_pc = (tcb_test->t_state).reg_t9 = (memaddr) test;
-    (tcb_test->t_state).reg_sp = RAMTOP - (2 * FRAME_SIZE);
-    insertThread(&readyQueue, tcb_test);
-    /* threadCount = 2; */
-
-    /***************************/
-    /* Chiamata allo scheduler */
-    /***************************/
-
-    schedule();
-    
     return 0;
 }
