@@ -88,9 +88,12 @@ void cs_thread(void) {
 static state_t tmpstate;
 memaddr stackalloc;
 
+uintptr_t p5sys = 0;
+uintptr_t p5send = 0;
+
 void test(void) {
     tprint("testA");
-   // ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
 
 }
 
