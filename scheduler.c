@@ -1,14 +1,16 @@
 
-#include "scheduler.h"
+
 #include <uARMtypes.h>
+#include "scheduler.h"
+#include "mikabooq.h"
 
 void scheduler(){
-	/*
+	
     // Setta l'interval timer al prossimo evento 
     //setNextTimer();
     // Se non c'è un processo in esecuzione 
 	if(currentProcess == NULL) {
-        // Se la readyQueue è vuota 
+        // Se la readyQueue è vuota
 		if(list_empty(&readyQueue)) {
 			tprint("empty\n");
             // Se processCount è zero chiamo HALT 
@@ -35,6 +37,6 @@ void scheduler(){
 	//process_TOD = getTODLO();
     // Carica lo stato del processo corrente 
     tprint("end\n");
-	//LDST(&(currentProcess->t_s.sp));
-	*/
+	LDST(&(currentProcess->t_s.sp));
+	
 }

@@ -1,10 +1,11 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include <listx.h>
 
-//struct list_head readyQueue;
+struct list_head readyQueue;
 
-//struct list_head waitingQueue;
+struct list_head waitingQueue;
 
 struct tcb_t* currentProcess;
 

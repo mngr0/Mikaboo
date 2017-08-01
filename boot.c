@@ -40,31 +40,17 @@ void intHandler(){
 
 /*
 void sysBpHandler(){
-	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
-	unsigned int a0 = (*sysbp_old).a1;
-	unsigned int a1 = (*sysbp_old).a2;
-	unsigned int a2 = (*sysbp_old).a3;
-	unsigned int a3 = (*sysbp_old).a4;
-	tprint("a0:" + a0);
-	tprint("a1:" + a1);
-	tprint("a2:" + a2);
-	tprint("a3:" + a3);
 	memaddr * base = (memaddr *) (TERM0ADDR);
 	char l='0'+a0;
 	*(base + 3) = 2 | (((memaddr) l) << 8);
 }
 */
 
-
-
-
-
-
 int main() {
 
 	currentProcess=NULL;
-	//INIT_LIST_HEAD(&readyQueue);
-	//INIT_LIST_HEAD(&waitingQueue);
+	INIT_LIST_HEAD(&readyQueue);
+	INIT_LIST_HEAD(&waitingQueue);
     /* Settaggio delle quattro aree, ogni area:
        - imposta il PC e il registro t9 con l'address della funzione nel nucleo che deve gestire le eccezioni di questo tipo
        - imposta il $SP al RAMTOP
@@ -111,10 +97,11 @@ int main() {
 	ttest->t_s.pc=(ttest->t_s.v6)=(memaddr) test;
 	//assegno valore di SP(CHECK)
 	ttest->t_s.sp=RAM_TOP -(2*FRAME_SIZE) ;
-	//thread_enqueue((struct tcb_t* )SSI,&readyQueue);
-	//thread_enqueue(ttest,&readyQueue);
 
-	//processCount=2;
+	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
+	thread_enqueue(ttest,&readyQueue);
+
+	processCount=2;
 	scheduler();
 	return 0;
 }

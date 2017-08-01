@@ -89,54 +89,36 @@ void pgmHandler(){
 }
 
 void sysBpHandler(){
-	/*
-	saveStateIn(sysbp_old, &currentProcess->p_s);
+	saveStateIn(sysbp_old, &currentProcess->t_s);
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
 	unsigned int a0 = (*sysbp_old).a1;
 	unsigned int a1 = (*sysbp_old).a2;
 	unsigned int a2 = (*sysbp_old).a3;
 	unsigned int a3 = (*sysbp_old).a4;
-	
+
 	// Se l'eccezione è di tipo System call 
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
-    	if( (currentProcess->p_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
+    	if( (currentProcess->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
 			// Se è fra SYS1 e SYS8 richiama le funzioni adeguate 
 			switch(a0){
-			    case CREATEPROCESS:
-			        createProcess((state_t *) a1);
+			    case SYS_SEND:
+			        //do msg send
 			        break;
-			    case TERMINATEPROCESS:
-			        terminateProcess(currentProcess);
-			        break;
-		        case VERHOGEN:
-		            verhogen((int *) a1);
-			        break;
-		        case PASSEREN:
-		            passeren((int *) a1);
-			        break;
-		        case SPECTRAPVEC:
-		            specExStVec((int) a1, (state_t *) a2, (state_t *) a3);
-			        break;
-		        case GETCPUTIME:
-		            getCPUTime();
-			        break;
-		        case WAITCLOCK:
-		            waitForClock();
-			        break;
-		        case WAITIO:
-		            waitForIO((int) a1, (int) a2, (int) a3);
+			    case SYS_RECV:
+			        //do message recv
 			        break;
 			    // Altrimenti la gestione viene passata in alto 
 			    default:
-			        useExStVec(SPECSYSBP);
+			        //useExStVec(SPECSYSBP);
 				break;            
 			}
 			
 		    // Richiamo lo scheduler 
 		    scheduler();
 		// Se invece è in user mode 
-		} else if((currentProcess->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+		} else if((currentProcess->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+			/*
 			// Se è una system call 
 			if(a0 >= CREATEPROCESS && a0 <= WAITIO){
 			    // Gestisco come fosse una program trap 
@@ -148,12 +130,12 @@ void sysBpHandler(){
 			} else {
 				useExStVec(SPECSYSBP);
 			}
+			*/
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
-		useExStVec(SPECSYSBP);
+		//useExStVec(SPECSYSBP);
 	}
 
 	PANIC();
-	*/
 }
