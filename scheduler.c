@@ -1,18 +1,23 @@
+
+#include "scheduler.h"
+#include <uARMtypes.h>
+
 void scheduler(){
-    /* Setta l'interval timer al prossimo evento */
+	/*
+    // Setta l'interval timer al prossimo evento 
     //setNextTimer();
-    /* Se non c'è un processo in esecuzione */
+    // Se non c'è un processo in esecuzione 
 	if(currentProcess == NULL) {
-        /* Se la readyQueue è vuota */
+        // Se la readyQueue è vuota 
 		if(list_empty(&readyQueue)) {
 			tprint("empty\n");
-            /* Se processCount è zero chiamo HALT */
+            // Se processCount è zero chiamo HALT 
 			if(processCount==0){
 				HALT();
-            /* Se processCount > 0 e softBlockCount vale 0. Si è verificato un deadlock, invoco PANIC() */
+            // Se processCount > 0 e softBlockCount vale 0. Si è verificato un deadlock, invoco PANIC() 
 			//}else if(processCount>0 && softBlockCount==0) {
 			//	PANIC();
-            /* Se processCount>0 e softBlockCount>0 mi metto in stato di attesa, invoco WAIT() */
+            // Se processCount>0 e softBlockCount>0 mi metto in stato di attesa, invoco WAIT() 
 			//}else if(processCount>0 && softBlockCount>0) {
 			//	setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 			//	WAIT();
@@ -20,7 +25,7 @@ void scheduler(){
 		} else {
 			currentProcess = (struct tcb_t*) thread_dequeue(&readyQueue);
 			tprint("pick\n");
-            /* Caso anomalo */
+            // Caso anomalo 
 			if(currentProcess == NULL){
 				PANIC();
 			}
@@ -28,8 +33,8 @@ void scheduler(){
 	}
 
 	//process_TOD = getTODLO();
-    /* Carica lo stato del processo corrente */
+    // Carica lo stato del processo corrente 
     tprint("end\n");
-	LDST(&(currentProcess->t_s.sp));
-	
+	//LDST(&(currentProcess->t_s.sp));
+	*/
 }

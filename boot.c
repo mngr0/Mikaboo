@@ -63,8 +63,8 @@ void sysBpHandler(){
 int main() {
 
 	currentProcess=NULL;
-	INIT_LIST_HEAD(&readyQueue);
-	INIT_LIST_HEAD(&waitingQueue);
+	//INIT_LIST_HEAD(&readyQueue);
+	//INIT_LIST_HEAD(&waitingQueue);
     /* Settaggio delle quattro aree, ogni area:
        - imposta il PC e il registro t9 con l'address della funzione nel nucleo che deve gestire le eccezioni di questo tipo
        - imposta il $SP al RAMTOP
@@ -111,10 +111,10 @@ int main() {
 	ttest->t_s.pc=(ttest->t_s.v6)=(memaddr) test;
 	//assegno valore di SP(CHECK)
 	ttest->t_s.sp=RAM_TOP -(2*FRAME_SIZE) ;
-	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
-	thread_enqueue(ttest,&readyQueue);
+	//thread_enqueue((struct tcb_t* )SSI,&readyQueue);
+	//thread_enqueue(ttest,&readyQueue);
 
-	processCount=2;
+	//processCount=2;
 	scheduler();
 	return 0;
 }
