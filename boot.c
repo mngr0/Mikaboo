@@ -5,6 +5,7 @@
 #include "mikabooq.h"
 #include "exceptions.h"
 #include "ssi.h"
+#include "scheduler.h"
 /*************************************************************************************************/
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*******
@@ -14,12 +15,7 @@
 
 void * SSI;
 
-struct list_head readyQueue;
 
-struct list_head waitingQueue;
-
-struct tcb_t* currentProcess;
-int processCount =0;
 
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
@@ -115,8 +111,10 @@ int main() {
 	ttest->t_s.pc=(ttest->t_s.v6)=(memaddr) test;
 	//assegno valore di SP(CHECK)
 	ttest->t_s.sp=RAM_TOP -(2*FRAME_SIZE) ;
+	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttest,&readyQueue);
-	processCount=1;
+
+	processCount=2;
 	scheduler();
 	return 0;
 }

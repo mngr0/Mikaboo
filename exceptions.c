@@ -26,17 +26,16 @@
 #include <uARMconst.h>
 #include <uARMtypes.h>
 #include <arch.h>
-	
-#include "include/base.h"
-#include "include/const.h"
-#include "include/types10.h"
 
-#include "include/pcb.h"
-#include "include/asl.h"
+#include "const.h"
 
-#include "include/scheduler.h"
-#include "include/syscall.h"
-#include "include/initial.h"
+
+#include "mikabooq.h"
+#include "asl.h"
+
+#include "scheduler.h"
+#include "syscall.h"
+#include "initial.h"
 
 state_t *tlb_old 	 = (state_t*) TLB_OLDAREA;
 state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
