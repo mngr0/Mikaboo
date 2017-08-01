@@ -12,9 +12,9 @@
  * payload: contiene un'argomento, se richiesto, per il servizio
  * reply: punterà all'area dove verra messa la risposta nel caso sia richiesta
  */
-void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
+//void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
     //struct msg_t msg_ssi;
-    
+
     //msg_ssi.service = service;
     //msg_ssi.payload = payload;
     //msg_ssi.sender = currentThread;
@@ -23,56 +23,70 @@ void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply)
     //MsgRecv(RECV, SSI_MAGIC, (unsigned int) & msg_ssi);
 
     //*reply = msg_ssi.reply;
-}
+//}
 
-unsigned int SSIdoRequest(struct msg_t * msg_ssi, unsigned int *reply) {
+unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t reply) {
+	unsigned int service;
+	service=*msg_ssi;
 
-   // unsigned int service = msg_ssi->service;
    // unsigned int payload = msg_ssi->payload;
    // sender = msg_ssi->sender;
 
    // if (service < 1 || service > MAX_REQUEST_VALUE)/* Uccidire il thread chiamante*/
    //     terminate(sender);
-        /*
-    switch (service) {
-            // service request values 
-        case GETT_ERRNO:
-            *reply = (unsigned int) createBrother((state_t *) payload);
-            break;
-        case CREATESON:
-            *reply = (unsigned int) createSon((state_t *) payload);
-            break;
-        case TERMINATE:
-            terminate(sender);
-            break;
-        case GETCPUTIME:
-            *reply = (unsigned int) getCpuTime(sender);
-            break;
-        case SPECPRGMGR:    return specPrgMgr((tcb_t *)payload);
-        case SPECTLBMGR:    return specTlbMgr((tcb_t *)payload);
-        case SPECSYSMGR:    return specSysMgr((tcb_t *)payload);
-        case WAITFORCLOCK:  return waitForClock(sender);
-        case WAITFORIO:     return waitForIO(msg_ssi);
-        case WAKE_UP_PSEUDO_CLOCK:   return wakeUpPseudoClock();
-        case WAKE_UP_FROM_IO:   return wakeUpFromIO(msg_ssi);
 
+	switch (service) {
+            // service request values 
+		case GET_ERRNO:
+		   //*reply = (unsigned int) createBrother((state_t *) payload);
+		break;
+		case CREATE_PROCESS:
+		   //*reply = (unsigned int) createSon((state_t *) payload);
+		break;
+		case CREATE_THREAD:
+		//terminate(sender);
+		break;
+		case TERMINATE_PROCESS:
+		break; 
+		case TERMINATE_THREAD :
+		break;
+		case SETPGMMGR :
+		break;
+		case SETTLBMGR :
+		break;
+		case SETSYSMGR:
+		break;
+		case GET_CPUTIME :
+		break;
+		case WAIT_FOR_CLOCK:
+		break; 
+		case DO_IO :
+
+		break;
+		case GET_PROCESSID :
+		break;
+		case GET_MYTHREADID :
+		break;
+		case GET_PARENTPROCID : 
+		break;
 	}
-	*/
-    return TRUE;
+	
+	return TRUE;
 }
 
 void ssi_entry() {
-    unsigned int toBeSent;
-    unsigned int msg;
-    struct tcb_t* sender;
-    for (;;) {
+	unsigned int toBeSent;
+	uintptr_t msg;
+	uintptr_t reply;
+	struct tcb_t* sender;
+	for (;;) {
 
-        
-        sender = msgrecv(NULL, &msg);
-       // toBeSent = SSIdoRequest(&msg, &(msg.reply));
 
-        if (toBeSent)
-            msgsend((memaddr) sender, &msg);
-    }
+		sender = msgrecv(NULL, msg);
+		toBeSent = SSIdoRequest(&msg, sender,reply);
+
+		if (toBeSent)
+			msgsend((memaddr) sender, reply);
+	}
 }
 
