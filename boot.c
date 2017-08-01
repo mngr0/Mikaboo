@@ -10,8 +10,6 @@
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*******
 ******************************************************************************************/
-#define	TERM0ADDR	0x240
-
 
 void * SSI;
 

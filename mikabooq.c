@@ -203,46 +203,44 @@ int msgq_add(struct tcb_t *sender, struct tcb_t *destination,uintptr_t value){
 	}else{
 		struct msg_t* item_libero = container_of(free_msg.next,struct msg_t,m_next);
 		list_del(&item_libero->m_next);
-                INIT_LIST_HEAD(&item_libero->m_next);//serve per staccare item libero da ciò a cui punta 
-                item_libero->m_sender=sender;
-                item_libero->m_value=value;
-                list_add_tail(&item_libero->m_next,&destination->t_msgq); //la add sempre in coda per avere l'ordine corretto dei messaggi
-                return 0;
+        INIT_LIST_HEAD(&item_libero->m_next);//serve per staccare item libero da ciò a cui punta 
+        item_libero->m_sender=sender;
+        item_libero->m_value=value;
+        list_add_tail(&item_libero->m_next,&destination->t_msgq); //la add sempre in coda per avere l'ordine corretto dei messaggi
+        return 0;
+    }
+}
 
-            }
-
-        }
-
-        int msgq_get(struct tcb_t **sender, struct tcb_t *destination,uintptr_t *value){
-        	if (destination==NULL){
-        		return -1;
-        	}
-        	else if (list_empty(&destination->t_msgq)){
-        		return -1;
-        	}
-        	else{
+int msgq_get(struct tcb_t **sender, struct tcb_t *destination,uintptr_t *value){
+	if (destination==NULL){
+		return -1;
+	}
+	else if (list_empty(&destination->t_msgq)){
+		return -1;
+	}
+	else{
 	//caso 1
-        		if(sender==NULL){
-        			struct msg_t* pm= container_of(destination->t_msgq.next,struct msg_t,m_next);
-        			*value=pm->m_value;
-        			list_del(destination->t_msgq.next);
-        			INIT_LIST_HEAD(&pm->m_next);
-        			list_add(&pm->m_next,&free_msg);
-        			return 0;
-        		}
+		if(sender==NULL){
+			struct msg_t* pm= container_of(destination->t_msgq.next,struct msg_t,m_next);
+			*value=pm->m_value;
+			list_del(destination->t_msgq.next);
+			INIT_LIST_HEAD(&pm->m_next);
+			list_add(&pm->m_next,&free_msg);
+			return 0;
+		}
 	//caso 2
-        		else if (*sender==NULL){
-        			struct msg_t* pm= container_of(destination->t_msgq.next,struct msg_t,m_next);
-        			*value=pm->m_value;
-        			*sender=pm->m_sender;
-        			list_del(destination->t_msgq.next);
-        			INIT_LIST_HEAD(&pm->m_next);
-        			list_add(&pm->m_next,&free_msg);
-        			return 0;
-        		}
+		else if (*sender==NULL){
+			struct msg_t* pm= container_of(destination->t_msgq.next,struct msg_t,m_next);
+			*value=pm->m_value;
+			*sender=pm->m_sender;
+			list_del(destination->t_msgq.next);
+			INIT_LIST_HEAD(&pm->m_next);
+			list_add(&pm->m_next,&free_msg);
+			return 0;
+		}
 		//caso 3
-        		else{
-        			struct list_head* iter;
+		else{
+			struct list_head* iter;
                         list_for_each(iter,&destination->t_msgq){ //ciclo per la ricerca
                         	struct msg_t* tm= container_of(iter,struct msg_t,m_next);
                         	if(*sender==tm->m_sender){

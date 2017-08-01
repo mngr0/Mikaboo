@@ -17,28 +17,28 @@ state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
 state_t *sysbp_old 	 = (state_t*) SYSBK_OLDAREA;
 
 void saveStateIn(state_t *from, state_t *to){
-        to->a1                  = from->a1;
-        to->a2                  = from->a2;
-        to->a3                  = from->a3;
-        to->a4                  = from->a4;
-        to->v1                  = from->v1;
-        to->v2                  = from->v2;
-        to->v3                  = from->v3;
-        to->v4                  = from->v4;
-        to->v5                  = from->v5;
-        to->v6                  = from->v6;
-        to->sl                  = from->sl;
-        to->fp                  = from->fp;
-        to->ip                  = from->ip;
-        to->sp                  = from->sp;
-        to->lr                  = from->lr;
-        to->pc                  = from->pc;
-        to->cpsr                = from->cpsr;
-        to->CP15_Control        = from->CP15_Control;
-        to->CP15_EntryHi        = from->CP15_EntryHi;
-        to->CP15_Cause          = from->CP15_Cause;
-        to->TOD_Hi              = from->TOD_Hi;
-        to->TOD_Low             = from->TOD_Low;
+	to->a1                  = from->a1;
+	to->a2                  = from->a2;
+	to->a3                  = from->a3;
+	to->a4                  = from->a4;
+	to->v1                  = from->v1;
+	to->v2                  = from->v2;
+	to->v3                  = from->v3;
+	to->v4                  = from->v4;
+	to->v5                  = from->v5;
+	to->v6                  = from->v6;
+	to->sl                  = from->sl;
+	to->fp                  = from->fp;
+	to->ip                  = from->ip;
+	to->sp                  = from->sp;
+	to->lr                  = from->lr;
+	to->pc                  = from->pc;
+	to->cpsr                = from->cpsr;
+	to->CP15_Control        = from->CP15_Control;
+	to->CP15_EntryHi        = from->CP15_EntryHi;
+	to->CP15_Cause          = from->CP15_Cause;
+	to->TOD_Hi              = from->TOD_Hi;
+	to->TOD_Low             = from->TOD_Low;
 }
 
 void useExStVec(int type){
@@ -89,7 +89,7 @@ void pgmHandler(){
 }
 
 void sysBpHandler(){
-	saveStateIn(sysbp_old, &currentProcess->t_s);
+	saveStateIn(sysbp_old, &currentThread->t_s);
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
 	unsigned int a0 = (*sysbp_old).a1;
 	unsigned int a1 = (*sysbp_old).a2;
@@ -98,34 +98,43 @@ void sysBpHandler(){
 	// Se l'eccezione è di tipo System call 
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
-    	if( (currentProcess->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
+		if( (currentThread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
 			// Se è fra SYS1 e SYS8 richiama le funzioni adeguate 
 			switch(a0){
-			    case SYS_SEND:
-				//a0 contiene la costante 1 (messaggio inviato)
+				case SYS_SEND:
+			    //a0 contiene la costante 1 (messaggio inviato)
 				//a1 contiene l'indirizzo del thread destinatario
 				//a2 contiene il messaggio
 					//devo capire sender
-				msgq_add(currentThread,a1,&a2);
-			        //do msg send
-			        break;
-			    case SYS_RECV:
+				msgq_add(currentThread,a1,a2);
+			       //do msg send
+				 // Evito che rientri nel codice della syscall
+				currentThread->t_s.pc += WORD_SIZE;
+				LDST(&currentThread->t_s);
+				break;
+				case SYS_RECV:
 				//a0 contiene costante 2
 				//a1 contiene l'indirizzo del mittente(null==tutti)
 				//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
 				msgq_get(a1,currentThread,&a2);
-			        //do message recv
-			        break;
+				// Evito che rientri nel codice della syscall
+				currentThread->t_s.a3=a2;
+				//forse abbiamo da copiare la struttura puntata
+				//nella memoria del cur thread
+				currentThread->t_s.pc += WORD_SIZE;
+				LDST(&currentThread->t_s);
+			    //do message recv
+				break;
 			    // Altrimenti la gestione viene passata in alto 
-			    default:
-			        //useExStVec(SPECSYSBP);
+				default:
+			    //useExStVec(SPECSYSBP);
 				break;            
 			}
 			
 		    // Richiamo lo scheduler 
-		    scheduler();
+			scheduler();
 		// Se invece è in user mode 
-		} else if((currentProcess->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+		} else if((currentThread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
 			/*
 			// Se è una system call 
 			if(a0 >= CREATEPROCESS && a0 <= WAITIO){
