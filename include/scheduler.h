@@ -7,9 +7,9 @@ struct list_head readyQueue;
 
 struct list_head waitingQueue;
 
-struct tcb_t* currentProcess;
+struct tcb_t* currentThread;
 
-int processCount;
+int threadCount;
 
 extern unsigned int slice_TOD;
 extern unsigned int process_TOD;

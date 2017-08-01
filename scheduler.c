@@ -9,12 +9,12 @@ void scheduler(){
     // Setta l'interval timer al prossimo evento 
     //setNextTimer();
     // Se non c'è un processo in esecuzione 
-	if(currentProcess == NULL) {
+	if(currentThread == NULL) {
         // Se la readyQueue è vuota
 		if(list_empty(&readyQueue)) {
 			tprint("empty\n");
             // Se processCount è zero chiamo HALT 
-			if(processCount==0){
+			if(threadCount==0){
 				HALT();
             // Se processCount > 0 e softBlockCount vale 0. Si è verificato un deadlock, invoco PANIC() 
 			//}else if(processCount>0 && softBlockCount==0) {
@@ -25,10 +25,10 @@ void scheduler(){
 			//	WAIT();
 			}
 		} else {
-			currentProcess = (struct tcb_t*) thread_dequeue(&readyQueue);
+			currentThread = (struct tcb_t*) thread_dequeue(&readyQueue);
 			tprint("pick\n");
             // Caso anomalo 
-			if(currentProcess == NULL){
+			if(currentThread == NULL){
 				PANIC();
 			}
 		}
@@ -37,6 +37,6 @@ void scheduler(){
 	//process_TOD = getTODLO();
     // Carica lo stato del processo corrente 
     tprint("end\n");
-	LDST(&(currentProcess->t_s.sp));
+	LDST(&(currentThread->t_s.sp));
 	
 }

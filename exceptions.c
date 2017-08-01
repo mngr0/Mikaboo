@@ -94,8 +94,7 @@ void sysBpHandler(){
 	unsigned int a0 = (*sysbp_old).a1;
 	unsigned int a1 = (*sysbp_old).a2;
 	unsigned int a2 = (*sysbp_old).a3;
-	unsigned int a3 = (*sysbp_old).a4;
-
+	
 	// Se l'eccezione è di tipo System call 
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
@@ -103,9 +102,18 @@ void sysBpHandler(){
 			// Se è fra SYS1 e SYS8 richiama le funzioni adeguate 
 			switch(a0){
 			    case SYS_SEND:
+				//a0 contiene la costante 1 (messaggio inviato)
+				//a1 contiene l'indirizzo del thread destinatario
+				//a2 contiene il messaggio
+					//devo capire sender
+				msgq_add(currentThread,a1,&a2);
 			        //do msg send
 			        break;
 			    case SYS_RECV:
+				//a0 contiene costante 2
+				//a1 contiene l'indirizzo del mittente(null==tutti)
+				//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
+				msgq_get(a1,currentThread,&a2);
 			        //do message recv
 			        break;
 			    // Altrimenti la gestione viene passata in alto 

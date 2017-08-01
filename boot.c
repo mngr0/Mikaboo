@@ -48,7 +48,7 @@ void sysBpHandler(){
 
 int main() {
 
-	currentProcess=NULL;
+	currentThread=NULL;
 	INIT_LIST_HEAD(&readyQueue);
 	INIT_LIST_HEAD(&waitingQueue);
     /* Settaggio delle quattro aree, ogni area:
@@ -101,7 +101,7 @@ int main() {
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttest,&readyQueue);
 
-	processCount=2;
+	threadCount=2;
 	scheduler();
 	return 0;
 }
