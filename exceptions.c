@@ -91,9 +91,9 @@ void pgmHandler(){
 void sysBpHandler(){
 	saveStateIn(sysbp_old, &currentThread->t_s);
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
-	unsigned int a0 = (*sysbp_old).a1;
-	unsigned int a1 = (*sysbp_old).a2;
-	unsigned int a2 = (*sysbp_old).a3;
+	unsigned int a0 = sysbp_old->a1;
+	struct tcb_t * a1 =(struct tcb_t *) sysbp_old->a2;
+	uintptr_t a2 = sysbp_old->a3;
 	
 	// Se l'eccezione è di tipo System call 
 	if(cause==EXC_SYSCALL){
@@ -104,7 +104,7 @@ void sysBpHandler(){
 				case SYS_SEND:
 			    //a0 contiene la costante 1 (messaggio inviato)
 				//a1 contiene l'indirizzo del thread destinatario
-				//a2 contiene il messaggio
+				//a2 contiene il puntatore al messaggio
 					//devo capire sender
 				msgq_add(currentThread,a1,a2);
 			       //do msg send
@@ -116,7 +116,7 @@ void sysBpHandler(){
 				//a0 contiene costante 2
 				//a1 contiene l'indirizzo del mittente(null==tutti)
 				//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
-				msgq_get(a1,currentThread,&a2);
+				msgq_get(a1,currentThread,a2);
 				// Evito che rientri nel codice della syscall
 				currentThread->t_s.a3=a2;
 				//forse abbiamo da copiare la struttura puntata
