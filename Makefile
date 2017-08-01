@@ -6,12 +6,20 @@ LDFLAGS = -T /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x /usr/include/u
 
 all: mikaboo
 
-mikaboo: p2test.o  mikabooq.o boot.o exceptions.o
-	$(LD) $(LDFLAGS) -o mikaboo mikabooq.o p2test.o boot.o exceptions.o
+mikaboo: p2test.o  mikabooq.o boot.o exceptions.o scheduler.o ssi.o
+	$(LD) $(LDFLAGS) -o mikaboo mikabooq.o p2test.o boot.o exceptions.o scheduler.o ssi.o
 	elf2uarm -k mikaboo
 
 mikabooq.o : mikabooq.c
 	$(CC) $(CFLAGS) -o mikabooq.o mikabooq.c
+
+
+ssi.o : ssi.c
+	$(CC) $(CFLAGS) -o ssi.o ssi.c
+
+
+scheduler.o : scheduler.c
+	$(CC) $(CFLAGS) -o scheduler.o scheduler.c
 
 exceptions.o : exceptions.c
 	$(CC) $(CFLAGS) -o exceptions.o exceptions.c

@@ -2,12 +2,13 @@
 #define SCHEDULER_H
 
 
-struct list_head readyQueue;
+//struct list_head readyQueue;
 
-struct list_head waitingQueue;
+//struct list_head waitingQueue;
 
 struct tcb_t* currentProcess;
-int processCount =0;
+
+int processCount;
 
 extern unsigned int slice_TOD;
 extern unsigned int process_TOD;
