@@ -94,7 +94,7 @@ void sysBpHandler(){
 	unsigned int a0 = sysbp_old->a1;
 	struct tcb_t * a1 =(struct tcb_t *) sysbp_old->a2;
 	uintptr_t a2 = sysbp_old->a3;
-	
+	int msg_res;
 	// Se l'eccezione è di tipo System call 
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
@@ -102,28 +102,36 @@ void sysBpHandler(){
 			// Se è fra SYS1 e SYS8 richiama le funzioni adeguate 
 			switch(a0){
 				case SYS_SEND:
-			    //a0 contiene la costante 1 (messaggio inviato)
-				//a1 contiene l'indirizzo del thread destinatario
-				//a2 contiene il puntatore al messaggio
-					//devo capire sender
+                //a0 contiene la costante 1 (messaggio inviato)
+                //a1 contiene l'indirizzo del thread destinatario
+                //a2 contiene il puntatore al messaggio
 				msgq_add(currentThread,a1,a2);
-			       //do msg send
-				 // Evito che rientri nel codice della syscall
+				if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
+					thread_outqueue(a1);
+					thread_enqueue(a1,&readyQueue);
+				}
+                // Evito che rientri nel codice della syscall
 				currentThread->t_s.pc += WORD_SIZE;
 				LDST(&currentThread->t_s);
 				break;
+
 				case SYS_RECV:
 				//a0 contiene costante 2
 				//a1 contiene l'indirizzo del mittente(null==tutti)
 				//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
-				msgq_get(a1,currentThread,a2);
-				// Evito che rientri nel codice della syscall
-				currentThread->t_s.a3=a2;
-				//forse abbiamo da copiare la struttura puntata
-				//nella memoria del cur thread
-				currentThread->t_s.pc += WORD_SIZE;
-				LDST(&currentThread->t_s);
-			    //do message recv
+				msg_res=msgq_get(&a1,currentThread,&a2);
+				//in a2 viene messo il puntatore alla struttura messaggio
+				//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
+				if (msg_res==-1){
+					thread_outqueue(currentThread);
+					thread_enqueue(currentThread,&waitingQueue);
+					currentThread->t_wait4sender=a1;
+				}else{
+					currentThread->t_s.a3=a2;
+					// Evito che rientri nel codice della syscall
+					currentThread->t_s.pc += WORD_SIZE;
+					LDST(&currentThread->t_s);
+				}
 				break;
 			    // Altrimenti la gestione viene passata in alto 
 				default:
