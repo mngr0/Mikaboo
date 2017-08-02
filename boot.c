@@ -6,6 +6,7 @@
 #include "exceptions.h"
 #include "ssi.h"
 #include "scheduler.h"
+#include "interrupts.h"
 /*************************************************************************************************/
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*******
@@ -30,11 +31,6 @@ void initArea(memaddr area, memaddr handler){
 }
 
 state_t a1state, a2state, a3state;
-
-void intHandler(){
-
-}
-
 
 /*
 void sysBpHandler(){

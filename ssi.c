@@ -47,7 +47,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		//terminate(sender);
 		break;
 		case TERMINATE_PROCESS:
-		break; 
+		break;
 		case TERMINATE_THREAD :
 		break;
 		case SETPGMMGR :
@@ -59,10 +59,12 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case GET_CPUTIME :
 		break;
 		case WAIT_FOR_CLOCK:
-		break; 
+		break;
 		case DO_IO :
 		//devregtr * base = (devregtr *) (TERM0ADDR);
 		//*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
+		//now put SSI (currenThread) in waiting Q , when interrupt will come 
+		// int handler will send ack and put ssi back in read Q
 		break;
 		case GET_PROCESSID :
 		break;

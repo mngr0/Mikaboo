@@ -29,18 +29,16 @@
 #include <uARMconst.h>
 #include <arch.h>
 	
-#include "include/base.h"
-#include "include/const.h"
-#include "include/types10.h"
 
-#include "include/pcb.h"
-#include "include/asl.h"
+#include "const.h"
 
-#include "include/initial.h"
-#include "include/scheduler.h"
-#include "include/exceptions.h"
-#include "include/syscall.h"
-#include "include/interrupts.h"
+
+#include "mikabooq.h"
+
+#include "scheduler.h"
+#include "exceptions.h"
+#include "ssi.h"
+#include "interrupts.h"
 
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
@@ -52,8 +50,8 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 void intHandler(){
     int cause;
     (*int_old).pc -= 4;
-    if(currentProcess != NULL){
-		saveStateIn(int_old, &currentProcess->p_s);
+    if(currentThread != NULL){
+		saveStateIn(int_old, &currentThread->t_s.sp);
     }
 	/* prendo il contenuto del registro cause */
 	cause = getCAUSE();
@@ -67,7 +65,7 @@ void intHandler(){
 	} else
 	/*  linea 2 timer */
 	if (CAUSE_IP_GET(cause, IL_TIMER)){
-	    timerHandler();
+	   // timerHandler();
 	} else
     /* linea 3 disk */
     if (CAUSE_IP_GET(cause, IL_DISK)){
@@ -92,27 +90,6 @@ void intHandler(){
 	scheduler();
 }
 
-/**
-	Esegue una verhogen
-*/
-void interruptVerhogen(int *sem, int statusRegister, memaddr* kernelStatusDev){
-    /* Prendo il primo processo in coda */
-    pcb_t* first = removeBlocked(sem);
-    /* Incremento il valore del semaforo */
-    (*sem)++;
-    /* Se la coda non era vuota */
-    if(first!=NULL){
-        /* Inserisco il processo nella readyqueue */
-        insertProcQ(&readyQueue, first);
-        /* Aggiorno il puntatore al semaforo in pcb_t */
-        first-> p_semAdd = NULL;
-        first-> waitForDev = FALSE;
-        first-> p_s.a1 = statusRegister;
-        softBlockCount--;
-    } else {
-		(*kernelStatusDev) = statusRegister;
-    }
-}
 
 /**
 	@param line: Linea di Interrupt di un tipo di device
@@ -135,35 +112,17 @@ int getHighestPriorityDev(memaddr* line){
 	return -1;
 }
 
-/**
-	Manda un ACK di conferma al device ed esegue una V sul suo semaforo
-*/
-void ackAndVerhogen(int intLine, int device, int statusReg, memaddr *commandReg){
-	/* Ottengo il semaforo corrispondente al device */
-	memaddr *semDev 		 = getSemDev(intLine, device);
-	memaddr *kernelStatusDev = getKernelStatusDev(intLine, device);
-	/* Mando al device un ACK */
-	(*commandReg) = DEV_C_ACK;
-	/* Eseguo una operazione di V su quel semaforo */
-	interruptVerhogen((int *) semDev, statusReg, kernelStatusDev);
+void ack(int intLine, int device, int statusReg, memaddr *commandReg){
+	//memaddr *semDev 		 = getSemDev(intLine, device);
+	//memaddr *kernelStatusDev = getKernelStatusDev(intLine, device);
+	//(*commandReg) = DEV_C_ACK;
 }
 
-/**
-	@param: Numero della linea di interrupt (0 o 1)
 
-	Handler per le prime due linee di interrupt.
-*/
 void lineOneTwoHandler(int interruptLineNum){
-	int *semaphore = NULL;
-	if(interruptLineNum == IL_IPI){
-		semaphore = &semIpi;
-	} else if(interruptLineNum == IL_CPUTIMER){
-		semaphore = &semCpuTimer;
-	}
-	if(semaphore != NULL){
-		verhogen(semaphore);
-	}
+
 }
+
 
 /**
 	@param interruptLineNum: Numero della linea di interrupt
@@ -172,60 +131,40 @@ void lineOneTwoHandler(int interruptLineNum){
 	Manda un ACK al device ed esegue una V sul semaforo associato al device.
 */
 void genericDevHandler(int interruptLineNum){
-	/* Uso la MACRO per ottenere la linea di interrupt */
+	/*
+	// Uso la MACRO per ottenere la linea di interrupt 
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(interruptLineNum);
-	/* Ottengo il device a priorità più alta */
+	// Ottengo il device a priorità più alta 
 	int device = getHighestPriorityDev(intLine);
-	/* Ottengo il command register del device */
+	// Ottengo il command register del device 
 	memaddr *commandReg = (memaddr*) (DEV_REG_ADDR(interruptLineNum, device) + COMMAND_REG_OFFSET);
-	/* Ottengo lo status register del device */
+	// Ottengo lo status register del device 
 	memaddr *statusReg 	= (memaddr*) (DEV_REG_ADDR(interruptLineNum, device));
 	ackAndVerhogen(interruptLineNum, device, (*statusReg), commandReg);
+	*/
 }
 
-/**
-	Handler per gli interrupt generati dal timer.
-	Compie un'operazione di V su tutti i processi bloccati dalla SYS7 e fa ripartire il timer
-*/
-void timerHandler(){
-	/* Controllo che a generare l'interrupt sia stato lo pseudo-clock */
-	if(isTimer(SCHED_PSEUDO_CLOCK)){
-		/* Eseguo una V su tutti i processi bloccati */
-		while(semPseudoClock < 0){
-			verhogen(&semPseudoClock);
-		}
-	} 
-	if(isTimer(SCHED_TIME_SLICE)){
-		/* Aggiorno il tempo passato dal processo sulla cpu */
-		if(currentProcess != NULL){
-			currentProcess->cpu_time += getTODLO() - process_TOD;
-			insertProcQ(&readyQueue, currentProcess);
-	    	currentProcess = NULL;
-		}
-	}
-}
 
-/**
-	Handler per gli interrupt generati dai terminali.
-*/
 void terminalHandler(){
-	/* Uso la MACRO per ottenere la linea di interrupt */
+	/*
+	// Uso la MACRO per ottenere la linea di interrupt
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
-	/* Ottengo il device a priorità più alta */
+	// Ottengo il device a priorità più alta 
 	int device = getHighestPriorityDev(intLine);
-	/* Controllo il registro di stato del terminale per sapere se è stata effettuata una 
-	  lettura o una scrittura */
+	// Controllo il registro di stato del terminale per sapere se è stata effettuata una lettura o una scrittura 
 	memaddr  terminalRegister = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
-	memaddr* statusRegRead    = (memaddr*) (terminalRegister + TERM_STATUS_READ);
-	memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
-	memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
-	memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
-	/* Se è una scrittura (priorità più alta) */
+	//memaddr* statusRegRead    = (memaddr*) (terminalRegister + TERM_STATUS_READ);
+	//memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
+	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
+	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
+	
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
-		ackAndVerhogen((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
+		ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
 	}
-	/* Altrimenti se è una lettura */
+
 	else if(((*statusRegRead) & 0x0F) == DEV_TRCV_S_CHARRECV){
-		ackAndVerhogen(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
+		ack(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
 	}
+	//put ssi in ready Q
+	*/
 }
