@@ -61,7 +61,8 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case WAIT_FOR_CLOCK:
 		break; 
 		case DO_IO :
-
+		//devregtr * base = (devregtr *) (TERM0ADDR);
+		//*(base + 3) = PRINTCHR | (((devregtr) *s) << BYTELEN);
 		break;
 		case GET_PROCESSID :
 		break;
