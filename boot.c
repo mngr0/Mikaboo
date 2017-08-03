@@ -1,4 +1,5 @@
 //Include
+//test
 #include "const.h"
 #include "nucleus.h"
 #include "arch.h"
@@ -16,7 +17,6 @@
 ******************************************************************************************/
 
 void * SSI;
-
 
 
 void initArea(memaddr area, memaddr handler){
@@ -72,6 +72,7 @@ int main() {
 	struct pcb_t *starting_process=proc_init();
 	thread_init();
 	msgq_init();
+
 	//Inizializzo SSI
 	SSI=thread_alloc(starting_process);
 	if(SSI==NULL){
@@ -89,25 +90,23 @@ int main() {
 	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
 
 	//PROCESSO TEST
-	struct pcb_t* test=proc_alloc(starting_process);
-	struct tcb_t* ttest=thread_alloc(test);
+//	struct pcb_t* test=proc_alloc(starting_process);
+	struct tcb_t* ttest=thread_alloc(starting_process);
 
 	if (ttest==NULL){
 		PANIC();
 	}
 
-	//abilita interrupt e VA TOLTO LA kernel mode (CHECK)
-	//CHECK se va usato la kernel mode oppure no
+	//abilita interrupt e kernel mode (CHECK)
 	ttest->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttest->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
 	ttest->t_s.CP15_Control =CP15_DISABLE_VM (ttest->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-
-	ttest->t_s.pc=ttest->t_s.v6=(memaddr) tust;
+	ttest->t_s.pc=ttest->t_s.v6=(memaddr) test;
 	//assegno valore di SP(CHECK)
-	ttest->t_s.sp=RAM_TOP -(2*FRAME_SIZE) ;
+	ttest->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
 	
-	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
+//	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttest,&readyQueue);
 	
 	
