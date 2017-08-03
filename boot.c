@@ -31,7 +31,7 @@ void initArea(memaddr area, memaddr handler){
 	newArea->CP15_Control =CP15_DISABLE_VM (newArea->CP15_Control);
 }
 
-state_t a1state, a2state, a3state;
+
 
 /*
 void sysBpHandler(){
@@ -89,6 +89,8 @@ int main() {
 	//disabilita memoria virtuale
 	ttest->t_s.CP15_Control =CP15_DISABLE_VM (ttest->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
+	int u=(memaddr) test;
+
 	ttest->t_s.pc=(ttest->t_s.v6)=(memaddr) test;
 	//assegno valore di SP(CHECK)
 	ttest->t_s.sp=RAM_TOP -(2*FRAME_SIZE) ;
@@ -97,6 +99,14 @@ int main() {
 	thread_enqueue(ttest,&readyQueue);
 
 	threadCount=2;
+
+/*
+	char t= 'n';
+    char *s=&t;
+    memaddr * base;
+    base = (memaddr *) (TERM0ADDR);
+    *(base) = 2 | (((memaddr) *s) << 8);
+    */
 	scheduler();
 	return 0;
 }

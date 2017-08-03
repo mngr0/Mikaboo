@@ -28,7 +28,7 @@
 unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t reply) {
 	unsigned int service;
 	service=*msg_ssi;
-	char t= 'a';
+	char t= 'n';
 	char *s=&t;
 	memaddr * base;
    // unsigned int payload = msg_ssi->payload;
