@@ -4,6 +4,8 @@
 #include "scheduler.h"
 #include "mikabooq.h"
 
+#include "nucleus.h"//for temaddr
+
 void scheduler(){
 	
     // Setta l'interval timer al prossimo evento 
@@ -12,7 +14,7 @@ void scheduler(){
 	if(currentThread == NULL) {
         // Se la readyQueue è vuota
 		if(list_empty(&readyQueue)) {
-			tprint("empty\n");
+			//tprint("empty\n");
             // Se processCount è zero chiamo HALT 
 			if(threadCount==0){
 				HALT();
@@ -26,7 +28,7 @@ void scheduler(){
 			}
 		} else {
 			currentThread = (struct tcb_t*) thread_dequeue(&readyQueue);
-			tprint("pick\n");
+
             // Caso anomalo 
 			if(currentThread == NULL){
 				PANIC();
@@ -34,9 +36,9 @@ void scheduler(){
 		}
 	}
 
-	//process_TOD = getTODLO();
+	// process_TOD = getTODLO();
     // Carica lo stato del processo corrente 
-    tprint("end\n");
+
+
 	LDST(&(currentThread->t_s.sp));
-	
 }

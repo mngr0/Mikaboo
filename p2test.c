@@ -23,7 +23,7 @@
 #include "nucleus.h"
 
 #define QPAGE FRAME_SIZE
-#define TERM0ADDR               0x24C
+
 
 static struct tcb_t* printid;
 
@@ -89,8 +89,13 @@ static state_t tmpstate;
 memaddr stackalloc;
 
 void test(void) {
-    tprint("testA");
-   // ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+    char t= 'n';
+    char *s=&t;
+    memaddr * base;
+    base = (memaddr *) (TERM0ADDR);
+    *(base) = 2 | (((memaddr) *s) << 8);
+
+    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
 
 }
 
