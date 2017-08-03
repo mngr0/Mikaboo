@@ -24,6 +24,8 @@
 #define GET_MYTHREADID 12
 #define GET_PARENTPROCID 13
 
+#define TERM0ADDR               0x24C
+
 typedef uintptr_t memaddr;
 typedef uintptr_t cputime;
 typedef uintptr_t devaddr;

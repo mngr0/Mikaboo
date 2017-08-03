@@ -54,7 +54,7 @@ int proc_delete(struct pcb_t *oldproc);
 
 /* return the pointer to the first child (NULL if the process has no children) */
 struct pcb_t *proc_firstchild(struct pcb_t *proc);
-
+ 
 /* return the pointer to the first thread (NULL if the process has no threads) */
 struct tcb_t *proc_firstthread(struct pcb_t *proc);
 

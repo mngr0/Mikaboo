@@ -19,6 +19,8 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
+#include "nucleus.h"
+
 void intHandler();
 void interruptVerhogen(int *sem, int statusRegister, memaddr* kernelStatusDev);
 int getHighestPriorityDev(memaddr* line);
