@@ -26,7 +26,7 @@ scheduler.o : scheduler.c
 exceptions.o : exceptions.c
 	$(CC) $(CFLAGS) -o exceptions.o exceptions.c
 
-boot.o : boot.c
+boot.o : boot.c 
 	$(CC) $(CFLAGS) -o boot.o boot.c
 
 p2test.o : p2test.c

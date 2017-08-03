@@ -38,7 +38,10 @@ void scheduler(){
 
 	// process_TOD = getTODLO();
     // Carica lo stato del processo corrente 
+	//char* t= "n";
+    //memaddr * base;
+    //base = (memaddr *) (TERM0ADDR);
+    //*(base) = 2 | (((memaddr) *t) << 8);
 
-
-	LDST(&(currentThread->t_s.sp));
+	LDST(&(currentThread->t_s));
 }

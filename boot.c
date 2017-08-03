@@ -7,6 +7,8 @@
 #include "ssi.h"
 #include "scheduler.h"
 #include "interrupts.h"
+#include "p2test.h"
+
 /*************************************************************************************************/
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*******
@@ -40,6 +42,17 @@ void sysBpHandler(){
 }
 */
 
+void tust(void) {
+    char t= 'g';
+    char *s=&t;
+    memaddr * base;
+    base = (memaddr *) (TERM0ADDR);
+    *(base) = 2 | (((memaddr) *s) << 8);
+
+   // ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+
+}
+extern void test();
 int main() {
 
 	currentThread=NULL;
@@ -74,10 +87,10 @@ int main() {
 	//assegno valore di SP(CHECK)
 	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
 
-
 	//PROCESSO TEST
 	struct pcb_t* test=proc_alloc(starting_process);
 	struct tcb_t* ttest=thread_alloc(test);
+
 	if (ttest==NULL){
 		PANIC();
 	}
@@ -88,24 +101,26 @@ int main() {
 	//disabilita memoria virtuale
 	ttest->t_s.CP15_Control =CP15_DISABLE_VM (ttest->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	int u=(memaddr) test;
 
-	ttest->t_s.pc=(ttest->t_s.v6)=(memaddr) test;
+	ttest->t_s.pc=ttest->t_s.v6=(memaddr) tust;
 	//assegno valore di SP(CHECK)
 	ttest->t_s.sp=RAM_TOP -(2*FRAME_SIZE) ;
-
+	
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttest,&readyQueue);
+	
+	
 
 	threadCount=2;
 
 /*
-	char t= 'n';
-    char *s=&t;
+	char* t= "n";
     memaddr * base;
     base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *s) << 8);
+    *(base) = 2 | (((memaddr) *t) << 8);
     */
 	scheduler();
 	return 0;
 }
+
+
