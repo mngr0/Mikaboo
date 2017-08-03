@@ -21,6 +21,7 @@
 #include <libuarm.h>
 
 #include "nucleus.h"
+#include "p2test.h"
 
 #define QPAGE FRAME_SIZE
 
@@ -89,7 +90,7 @@ static state_t tmpstate;
 memaddr stackalloc;
 
 void test(void) {
-    char t= 'n';
+    char t= 'm';
     char *s=&t;
     memaddr * base;
     base = (memaddr *) (TERM0ADDR);

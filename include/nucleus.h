@@ -31,7 +31,6 @@ typedef uintptr_t cputime;
 typedef uintptr_t devaddr;
 
 extern void* SSI;
-extern void test(); 
 #define msgsend(dest, payload) (SYSCALL(SYS_SEND,(unsigned int) (dest),(unsigned int) (payload),0))
 
 #define msgrecv(source, reply) (((struct tcb_t *) SYSCALL(SYS_RECV,(unsigned int) (source),(unsigned int) (reply),0)))

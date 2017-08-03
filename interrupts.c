@@ -51,7 +51,7 @@ void intHandler(){
     int cause;
     (*int_old).pc -= 4;
     if(currentThread != NULL){
-		saveStateIn(int_old, &currentThread->t_s.sp);
+		saveStateIn(int_old, &currentThread->t_s);
     }
 	/* prendo il contenuto del registro cause */
 	cause = getCAUSE();
