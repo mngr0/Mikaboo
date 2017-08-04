@@ -22,13 +22,13 @@
     //MsgSend(SEND, SSI_MAGIC, (unsigned int) & msg_ssi);
     //MsgRecv(RECV, SSI_MAGIC, (unsigned int) & msg_ssi);
 
-    //*reply = msg_ssi.reply;
+    // *reply = msg_ssi.reply;
 //}
 
 unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t reply) {
 	unsigned int service;
 	service=*msg_ssi;
-	char t= 'n';
+	char t= 'd';
 	char *s=&t;
 	memaddr * base;
    // unsigned int payload = msg_ssi->payload;
@@ -64,7 +64,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		break;
 		case DO_IO:
 		base = (memaddr *) (TERM0ADDR);
-		*(base + 3) = 2 | (((memaddr) *s) << 8);
+		*(base) = 2 | (((memaddr) *s) << 8);
 
 		//now put SSI (currenThread) in waiting Q , when interrupt will come 
 		//int handler will send ack and put ssi back in read Q
