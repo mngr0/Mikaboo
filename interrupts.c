@@ -50,43 +50,48 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 void intHandler(){
     int cause;
     (*int_old).pc -= 4;
+   memaddr * base;
+    base = (memaddr *) (TERM0ADDR);
+	*(base)=DEV_C_ACK;
+	
     if(currentThread != NULL){
 		saveStateIn(int_old, &currentThread->t_s);
     }
-	/* prendo il contenuto del registro cause */
+	// prendo il contenuto del registro cause 
 	cause = getCAUSE();
-	/* Se la causa dell'interrupt è la linea 0 */
+	// Se la causa dell'interrupt è la linea 0 
 	if(CAUSE_IP_GET(cause, IL_IPI)){
 		lineOneTwoHandler(IL_IPI);
 	} else 
-	/* linea 1 */
+	// linea 1 
 	if(CAUSE_IP_GET(cause, IL_CPUTIMER)){
 		lineOneTwoHandler(IL_CPUTIMER);
 	} else
-	/*  linea 2 timer */
+	//  linea 2 timer 
 	if (CAUSE_IP_GET(cause, IL_TIMER)){
-	   // timerHandler();
+	    timerHandler();
 	} else
-    /* linea 3 disk */
+    // linea 3 disk 
     if (CAUSE_IP_GET(cause, IL_DISK)){
         genericDevHandler(IL_DISK);
     } else
-    /* linea 4 tape*/
+    // linea 4 tape
     if (CAUSE_IP_GET(cause, IL_TAPE)){
         genericDevHandler(IL_TAPE);
     } else
-    /* linea 5 network */
+    // linea 5 network 
     if (CAUSE_IP_GET(cause, IL_ETHERNET)){
         genericDevHandler(IL_ETHERNET);
     } else
-    /* linea 6 printer*/
+    // linea 6 printer
     if (CAUSE_IP_GET(cause, INT_PRINTER)){
         genericDevHandler(IL_PRINTER);
     } else
-    /* linea 7 terminal */
+    // linea 7 terminal 
 	if (CAUSE_IP_GET(cause, INT_TERMINAL)){
 	    terminalHandler();
 	}
+
 	scheduler();
 }
 
@@ -111,7 +116,8 @@ int getHighestPriorityDev(memaddr* line){
 	}
 	return -1;
 }
-
+void timerHandler(){
+}
 void ack(int intLine, int device, int statusReg, memaddr *commandReg){
 	//memaddr *semDev 		 = getSemDev(intLine, device);
 	//memaddr *kernelStatusDev = getKernelStatusDev(intLine, device);
@@ -146,7 +152,7 @@ void genericDevHandler(int interruptLineNum){
 
 
 void terminalHandler(){
-	/*
+	
 	// Uso la MACRO per ottenere la linea di interrupt
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
 	// Ottengo il device a priorità più alta 
@@ -157,7 +163,7 @@ void terminalHandler(){
 	//memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
 	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
 	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
-	
+	/*
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
 		ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
 	}
@@ -165,6 +171,6 @@ void terminalHandler(){
 	else if(((*statusRegRead) & 0x0F) == DEV_TRCV_S_CHARRECV){
 		ack(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
 	}
-	//put ssi in ready Q
 	*/
+	//put ssi in ready Q
 }

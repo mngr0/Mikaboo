@@ -92,7 +92,6 @@ int main() {
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
 	struct tcb_t* ttest=thread_alloc(starting_process);
-
 	if (ttest==NULL){
 		PANIC();
 	}
@@ -106,7 +105,7 @@ int main() {
 	//assegno valore di SP(CHECK)
 	ttest->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
 	
-//	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
+	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttest,&readyQueue);
 	
 	
@@ -118,7 +117,7 @@ int main() {
     memaddr * base;
     base = (memaddr *) (TERM0ADDR);
     *(base) = 2 | (((memaddr) *t) << 8);
-    */
+*/
 	scheduler();
 	return 0;
 }

@@ -81,14 +81,15 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 }
 
 void ssi_entry() {
-	char* t= "s";
-    memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *t) << 8);
 	unsigned int toBeSent;
 	uintptr_t msg;
 	uintptr_t reply;
 	struct tcb_t* sender;
+	char* t= "s";
+    memaddr * base;
+    base = (memaddr *) (TERM0ADDR);
+    *(base) = 2 | (((memaddr) *t) << 8);
+
 	for (;;) {
 
 

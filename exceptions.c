@@ -126,7 +126,7 @@ void sysBpHandler(){
 					thread_outqueue(currentThread);
 					thread_enqueue(currentThread,&waitingQueue);
 					currentThread->t_wait4sender=a1;
-					currentThread==NULL;
+					currentThread=NULL;
 				}else{
 					currentThread->t_s.a3=a2;
 					// Evito che rientri nel codice della syscall
