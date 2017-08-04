@@ -59,6 +59,7 @@ int main() {
 	currentThread=NULL;
 	INIT_LIST_HEAD(&readyQueue);
 	INIT_LIST_HEAD(&waitingQueue);
+	INIT_LIST_HEAD(&waitForPseudoClockQueue);
     /* Settaggio delle quattro aree, ogni area:
        - imposta il PC e il registro t9 con l'address della funzione nel nucleo che deve gestire le eccezioni di questo tipo
        - imposta il $SP al RAMTOP
@@ -110,7 +111,7 @@ int main() {
 	
 	
 
-	threadCount=2;
+	threadCount=1;
 
 /*
 	char* t= "n";

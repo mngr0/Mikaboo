@@ -50,6 +50,10 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 void intHandler(){
     int cause;
     (*int_old).pc -= 4;
+   memaddr * base;
+    base = (memaddr *) (TERM0ADDR);
+	*(base)=DEV_C_ACK;
+
     if(currentThread != NULL){
 		saveStateIn(int_old, &currentThread->t_s);
     }
@@ -148,9 +152,6 @@ void genericDevHandler(int interruptLineNum){
 
 
 void terminalHandler(){
-   memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-	*(base)=DEV_C_ACK;
 
 	// Uso la MACRO per ottenere la linea di interrupt
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);

@@ -7,9 +7,13 @@ struct list_head readyQueue;
 
 struct list_head waitingQueue;
 
+struct list_head waitForPseudoClockQueue;
+
 struct tcb_t* currentThread;
 
+
 int threadCount;
+int softBlockCount;
 
 extern unsigned int slice_TOD;
 extern unsigned int process_TOD;
