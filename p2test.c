@@ -29,6 +29,7 @@
 static struct tcb_t* printid;
 
 static void ttyprintstring(devaddr device, char* s) {
+    /*
     uintptr_t status;
 
     for (; *s; s++) {
@@ -41,6 +42,7 @@ static void ttyprintstring(devaddr device, char* s) {
                 return;
         }
     }
+    */
 }
 
 void tty0out_thread(void) {

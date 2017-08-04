@@ -106,9 +106,13 @@ void sysBpHandler(){
                 //a1 contiene l'indirizzo del thread destinatario
                 //a2 contiene il puntatore al messaggio
 				msgq_add(currentThread,a1,a2);
-				if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
-					thread_outqueue(a1);
-					thread_enqueue(a1,&readyQueue);
+				if(a1->t_status==T_STATUS_W4MSG){
+					if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
+						thread_outqueue(a1);
+						thread_enqueue(a1,&readyQueue);
+						currentThread->t_status=T_STATUS_READY;
+						softBlockCount--;
+					}
 				}
                 // Evito che rientri nel codice della syscall
 				currentThread->t_s.pc += WORD_SIZE;
@@ -126,7 +130,9 @@ void sysBpHandler(){
 					thread_outqueue(currentThread);
 					thread_enqueue(currentThread,&waitingQueue);
 					currentThread->t_wait4sender=a1;
+					currentThread->t_status=T_STATUS_W4MSG;
 					currentThread=NULL;
+					softBlockCount++;
 				}else{
 					currentThread->t_s.a3=a2;
 					// Evito che rientri nel codice della syscall

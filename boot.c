@@ -17,7 +17,8 @@
 ******************************************************************************************/
 
 void * SSI;
-
+struct tcb_t* ttust;
+struct tcb_t* ttost;
 
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
@@ -43,19 +44,40 @@ void sysBpHandler(){
 }
 */
 
-void tust(void) {
-    char t= 'g';
-    char *s=&t;
-    memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *s) << 8);
+void BPHERE(){}
 
-   // ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+void tust() {
+	char t= 'U';
+	char *s=&t;
+	uintptr_t r;
+	memaddr * base;
+	base = (memaddr *) (TERM0ADDR);
 
+	while (1){
+		msgsend(ttost, &r);
+		BPHERE();
+		*(base) = 2 | (((memaddr) *s) << 8);
+		msgrecv(ttost, &r);
+	}
 }
+
+void tost() {
+	char t= 'O';
+	char *s=&t;
+	uintptr_t r;
+	memaddr * base;
+	base = (memaddr *) (TERM0ADDR);
+	*(base) = 2 | (((memaddr) *s) << 8);
+	while(1){
+		msgrecv(ttust, &r);
+		BPHERE();
+		*(base) = 2 | (((memaddr) *s) << 8);
+		msgsend(ttust, &r);
+	}
+}
+
 extern void test();
 int main() {
-
 	currentThread=NULL;
 	INIT_LIST_HEAD(&readyQueue);
 	INIT_LIST_HEAD(&waitingQueue);
@@ -90,28 +112,48 @@ int main() {
 	//assegno valore di SP(CHECK)
 	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
 
+
+
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
-	struct tcb_t* ttest=thread_alloc(starting_process);
-	if (ttest==NULL){
+	ttost=thread_alloc(starting_process);
+	if (ttost==NULL){
 		PANIC();
 	}
 
 	//abilita interrupt e kernel mode (CHECK)
-	ttest->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttest->t_s.cpsr)|STATUS_SYS_MODE);
+	ttost->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttost->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
-	ttest->t_s.CP15_Control =CP15_DISABLE_VM (ttest->t_s.CP15_Control);
+	ttost->t_s.CP15_Control =CP15_DISABLE_VM (ttost->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttest->t_s.pc=ttest->t_s.v6=(memaddr) test;
+	ttost->t_s.pc=ttost->t_s.v6=(memaddr) tost;
 	//assegno valore di SP(CHECK)
-	ttest->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
+	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
+
+
+
+
+	ttust=thread_alloc(starting_process);
+	if (ttust==NULL){
+		PANIC();
+	}
+
+	//abilita interrupt e kernel mode (CHECK)u
+	ttust->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttust->t_s.cpsr)|STATUS_SYS_MODE);
+	//disabilita memoria virtuale
+	ttust->t_s.CP15_Control =CP15_DISABLE_VM (ttust->t_s.CP15_Control);
+	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
+	ttust->t_s.pc=ttust->t_s.v6=(memaddr) tust;
+	//assegno valore di SP(CHECK)
+	ttust->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
 	
-	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
-	thread_enqueue(ttest,&readyQueue);
-	
+	//thread_enqueue((struct tcb_t* )SSI,&readyQueue);
+	thread_enqueue(ttost,&readyQueue);
+	thread_enqueue(ttust,&readyQueue);
+
 	
 
-	threadCount=1;
+	threadCount=2;
 
 /*
 	char* t= "n";
