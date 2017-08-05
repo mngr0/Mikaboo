@@ -19,7 +19,7 @@
 void * SSI;
 struct tcb_t* ttust;
 struct tcb_t* ttost;
-
+struct tcb_t* ttist;
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
 	/* Memorizza il contenuto attuale del processore in newArea */
@@ -44,11 +44,19 @@ void sysBpHandler(){
 }
 */
 
+void tist() {
+	char r='d';
+
+	while (1){
+		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (r<<8));
+	}
+}
+
+
 char ot,ut;
 char* or, *ur;
 
 void BPHERE(){}
-
 void tust() {
 	ut= 'z';
 	char r='d';
@@ -156,13 +164,13 @@ int main() {
 	//disabilita memoria virtuale
 	ttust->t_s.CP15_Control =CP15_DISABLE_VM (ttust->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttust->t_s.pc=ttust->t_s.v6=(memaddr) tust;
+	ttust->t_s.pc=ttost->t_s.v6=(memaddr) tust;
 	//assegno valore di SP(CHECK)
 	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE) ;
 
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
-	thread_enqueue(ttost,&readyQueue);
 	thread_enqueue(ttust,&readyQueue);
+	thread_enqueue(ttost,&readyQueue);
 
 	threadCount=3;
 

@@ -91,7 +91,6 @@ void intHandler(){
 	if (CAUSE_IP_GET(cause, INT_TERMINAL)){
 	    terminalHandler();
 	}
-
 	scheduler();
 }
 
@@ -172,5 +171,8 @@ void terminalHandler(){
 		ack(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
 	}
 	*/
-	//put ssi in ready Q
+	//sent message by SSI
+	//to the first in the right queue
+	//chiama la funzione che controlla e stampa
+	//msgq_add(SSI,_proc_,a2);
 }
