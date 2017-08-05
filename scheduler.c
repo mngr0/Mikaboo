@@ -33,12 +33,6 @@ void scheduler() {
         if (threadCount == 1)/* se c'e' solo il SSI -> normal system shutdown */
             HALT(); /* chiamo la HALT ROM routine */
         else if (threadCount > 0 && softBlockCount == 0) {/* deadlock */
-	/*
-        char* t= "P";
-	    memaddr * base;
-	    base = (memaddr *) (TERM0ADDR);
-	    *(base) = 2 | (((memaddr) *t) << 8);
-	*/
             PANIC(); // chiamo la PANIC ROM routine 
 	
         }
@@ -46,7 +40,7 @@ void scheduler() {
             /* se ci sono thread in attesa dello pseudo tick,
              * carico il valore dello pseudo clock nel registro della cpu.*/
             if (!list_empty(&waitForPseudoClockQueue)) {
-             //   SET_IT(SCHED_PSEUDO_CLOCK);
+                SET_IT(SCHED_PSEUDO_CLOCK);
             }
             /* impostiamo lo stato del processore con gli interrupt abilitati*/
            // setSTATUS(getSTATUS() | STATUS_IEc | STATUS_INT_UNMASKED);
@@ -60,7 +54,7 @@ void scheduler() {
             currentThread = thread_dequeue(&readyQueue);
            // currentThread->elapsedTime = 0;
            // currentThread->startTime = GET_TODLOW;
-           // SET_IT(SCHED_TIME_SLICE);
+            SET_IT(SCHED_TIME_SLICE);
             /* Altrimenti se è passato il SCHED_TIME_SLICE rimuovo il thread corrente dall'esecuzione*/
         }// else if (currentThread->elapsedTime >= SCHED_TIME_SLICE) {
             //in questo modo do priorità all'SSI
