@@ -3,26 +3,38 @@
 #include <uARMtypes.h>
 #include "scheduler.h"
 #include "mikabooq.h"
-
+#include "arch.h"
 #include "nucleus.h"//for temaddr
-
+#include "listx.h"
 /*************/
 /* Scheduler */
 /*************/
 
-/*
-struct list_head disk_queue[8] = {LIST_HEAD_INIT_ARRAY_8(disk_queue)};
-struct list_head tape_queue[8] = {LIST_HEAD_INIT_ARRAY_8(tape_queue)};
-struct list_head ethernet_queue[8] = {LIST_HEAD_INIT_ARRAY_8(ethernet_queue)};
-struct list_head printer_queue[8] = {LIST_HEAD_INIT_ARRAY_8(printer_queue)};
-struct list_head terminal_queue[8] = {LIST_HEAD_INIT_ARRAY_8(terminal_queue)};
-*/
-softBlockCount = 0; /* il numero di thread bloccai in attesa di I/O o di completare una richiesta dal SSI */
+
+
+int softBlockCount = 0; /* il numero di thread bloccai in attesa di I/O o di completare una richiesta dal SSI */
 
 unsigned int slice_TOD = 0;
 unsigned int clock_TOD = 0;
 unsigned int process_TOD=0;
 void prova(){}
+
+void init_single_dev(struct dev_acc_ctrl *dev_list,int n){
+    int i;
+    for (i=0;i<8;i++){
+        dev_list[i].state=device_free;
+        dev_list[i].device=DEV_REG_START+DEV_REG_SIZE*(i+DEV_PER_INT*n);
+        INIT_LIST_HEAD(&dev_list[i].acc);
+    }
+}
+
+void init_dev_ctrl(){
+    init_single_dev(disk_queue,0);
+    init_single_dev(tape_queue,1);
+    init_single_dev(ethernet_queue,2);
+    init_single_dev(printer_queue,3);
+    init_single_dev(terminal_queue,4);
+}
 
 /**************************************************************/
 /* Funzione che deve gestire clock, pseudo-clock e scheduling */

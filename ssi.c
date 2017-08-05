@@ -3,6 +3,8 @@
 #include "mikabooq.h"
 #include "ssi.h"
 #include "nucleus.h"
+#include "scheduler.h"
+
 /* Tramite questa funzione un thread può richiedere un servizio. Se la richiesta 
  * fatta dal Thread non esiste allora esso e tutta la sua progenie verranno uccisi.
  * Il thread che fa la richiesta deve obbligatoriamente restare in attesa di una 
@@ -24,6 +26,12 @@
 
     // *reply = msg_ssi.reply;
 //}
+
+void ssi_do_io(struct dev_acc_ctrl device , uintptr_t command,uintptr_t data1,uintptr_t data2){
+	//controlla e scrive se necessario
+	//controllare -> device.state
+	//scrivere 
+}
 
 unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t reply) {
 	unsigned int service;
@@ -63,11 +71,11 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case WAIT_FOR_CLOCK:
 		break;
 		case DO_IO:
+		//incoda nella coda giusta e chiama la funzione che controlla e stampa
 		base = (memaddr *) (TERM0ADDR);
-		*(base) = 2 | (((memaddr) *s) << 8);
+		*(base) = 2 | (((memaddr) t) << 8);
 
-		//now put SSI (currenThread) in waiting Q , when interrupt will come 
-		//int handler will send ack and put ssi back in read Q
+
 		break;
 		case GET_PROCESSID :
 		break;
