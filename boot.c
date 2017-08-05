@@ -44,35 +44,50 @@ void sysBpHandler(){
 }
 */
 
+char ot,ut;
+char* or, *ur;
+
 void BPHERE(){}
 
 void tust() {
-	char t= 'U';
-	char *s=&t;
-	uintptr_t r;
+	ut= 'z';
+	char r='d';
+	ur="d";
+
 	memaddr * base;
 	base = (memaddr *) (TERM0ADDR);
 
 	while (1){
-		msgsend(ttost, &r);
+		msgsend(ttost, &ut);
+		ut--;
+		if(ut== 'a'-1){
+			ut='z';
+		}
 		BPHERE();
-		*(base) = 2 | (((memaddr) *s) << 8);
-		msgrecv(ttost, &r);
+
+		msgrecv(ttost, &ur);
+		*(base) = 2 | (((memaddr) *ur) << 8);
 	}
 }
 
 void tost() {
-	char t= 'O';
-	char *s=&t;
-	uintptr_t r;
-	memaddr * base;
+	ot= 'A';
+	char r='P';
+	or="P";
+
+	memaddr *base;
 	base = (memaddr *) (TERM0ADDR);
-	*(base) = 2 | (((memaddr) *s) << 8);
+
 	while(1){
-		msgrecv(ttust, &r);
+		msgrecv(ttust, &or);
+		*(base) = 2 | (((memaddr) *or) << 8);
 		BPHERE();
-		*(base) = 2 | (((memaddr) *s) << 8);
-		msgsend(ttust, &r);
+
+		msgsend(ttust, &ot);
+		ot++;
+		if(ot== 'Z'+1){
+			ot='A';
+		}
 	}
 }
 
@@ -131,8 +146,6 @@ int main() {
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
 
 
-
-
 	ttust=thread_alloc(starting_process);
 	if (ttust==NULL){
 		PANIC();
@@ -145,15 +158,13 @@ int main() {
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
 	ttust->t_s.pc=ttust->t_s.v6=(memaddr) tust;
 	//assegno valore di SP(CHECK)
-	ttust->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
-	
-	//thread_enqueue((struct tcb_t* )SSI,&readyQueue);
+	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE) ;
+
+	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttost,&readyQueue);
 	thread_enqueue(ttust,&readyQueue);
 
-	
-
-	threadCount=2;
+	threadCount=3;
 
 /*
 	char* t= "n";
