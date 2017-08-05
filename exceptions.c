@@ -99,19 +99,25 @@ void sysBpHandler(){
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (currentThread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
-			// Se è fra SYS1 e SYS8 richiama le funzioni adeguate 
 			switch(a0){
+				case 0:
+					PANIC();
+
 				case SYS_SEND:
                 //a0 contiene la costante 1 (messaggio inviato)
                 //a1 contiene l'indirizzo del thread destinatario
                 //a2 contiene il puntatore al messaggio
-				msgq_add(currentThread,a1,a2);
+				msg_res=msgq_add(currentThread,a1,a2);
+				if(msg_res==-1){
+					currentThread->t_s.a1=-1;
+				}
 				if(a1->t_status==T_STATUS_W4MSG){
 					if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
 						thread_outqueue(a1);
 						thread_enqueue(a1,&readyQueue);
 						a1->t_s.pc -= WORD_SIZE;
 						currentThread->t_status=T_STATUS_READY;
+						currentThread->t_s.a1=0;
 						softBlockCount--;
 					}
 				}
