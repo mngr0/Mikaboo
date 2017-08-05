@@ -110,6 +110,7 @@ void sysBpHandler(){
 					if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
 						thread_outqueue(a1);
 						thread_enqueue(a1,&readyQueue);
+						a1->t_s.pc -= WORD_SIZE;
 						currentThread->t_status=T_STATUS_READY;
 						softBlockCount--;
 					}
@@ -123,7 +124,7 @@ void sysBpHandler(){
 				//a0 contiene costante 2
 				//a1 contiene l'indirizzo del mittente(null==tutti)
 				//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
-				msg_res=msgq_get(&a1,currentThread,&a2);
+				msg_res=msgq_get(&a1,currentThread,a2);
 				//in a2 viene messo il puntatore alla struttura messaggio
 				//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
 				if (msg_res==-1){
@@ -167,6 +168,7 @@ void sysBpHandler(){
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
 		//useExStVec(SPECSYSBP);
+		scheduler();
 	}
 
 	PANIC();
