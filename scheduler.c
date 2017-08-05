@@ -43,7 +43,7 @@ void scheduler() {
                 SET_IT(SCHED_PSEUDO_CLOCK);
             }
             /* impostiamo lo stato del processore con gli interrupt abilitati*/
-           // setSTATUS(getSTATUS() | STATUS_IEc | STATUS_INT_UNMASKED);
+            setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
             for (;;);
         }
     }
@@ -54,7 +54,7 @@ void scheduler() {
             currentThread = thread_dequeue(&readyQueue);
            // currentThread->elapsedTime = 0;
            // currentThread->startTime = GET_TODLOW;
-            SET_IT(SCHED_TIME_SLICE);
+          //  SET_IT(SCHED_TIME_SLICE);
             /* Altrimenti se è passato il SCHED_TIME_SLICE rimuovo il thread corrente dall'esecuzione*/
         }// else if (currentThread->elapsedTime >= SCHED_TIME_SLICE) {
             //in questo modo do priorità all'SSI
