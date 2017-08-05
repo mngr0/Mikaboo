@@ -40,10 +40,10 @@ void scheduler() {
             /* se ci sono thread in attesa dello pseudo tick,
              * carico il valore dello pseudo clock nel registro della cpu.*/
             if (!list_empty(&waitForPseudoClockQueue)) {
-                SET_IT(SCHED_PSEUDO_CLOCK);
+              //  SET_IT(SCHED_PSEUDO_CLOCK);
             }
-            /* impostiamo lo stato del processore con gli interrupt abilitati*/
-            setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+            /* impostiamo lo stato del processore con gli interrupt abilitati*/  //CHECK PLS
+            //setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
             for (;;);
         }
     }
