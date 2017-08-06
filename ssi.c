@@ -4,7 +4,8 @@
 #include "ssi.h"
 #include "nucleus.h"
 #include "scheduler.h"
-
+unsigned int* service;
+struct dev_acc_ctrl* q;
 /* Tramite questa funzione un thread può richiedere un servizio. Se la richiesta 
  * fatta dal Thread non esiste allora esso e tutta la sua progenie verranno uccisi.
  * Il thread che fa la richiesta deve obbligatoriamente restare in attesa di una 
@@ -34,18 +35,14 @@ void ssi_do_io(struct dev_acc_ctrl device , uintptr_t command,uintptr_t data1,ui
 }
 
 unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t reply) {
-	unsigned int service;
-	service=*msg_ssi;
-	char t= 'd';
-	char *s=&t;
-	memaddr * base;
+	service=msg_ssi;
    // unsigned int payload = msg_ssi->payload;
    // sender = msg_ssi->sender;
 
    // if (service < 1 || service > MAX_REQUEST_VALUE)/* Uccidire il thread chiamante*/
    //     terminate(sender);
 
-	switch (service) {
+	switch (*service) {
             // service request values 
 		case GET_ERRNO:
 		   //*reply = (unsigned int) createBrother((state_t *) payload);
@@ -71,10 +68,12 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case WAIT_FOR_CLOCK:
 		break;
 		case DO_IO:
-		//incoda nella coda giusta e chiama la funzione che controlla e stampa
-		base = (memaddr *) (TERM0ADDR);
-		*(base) = 2 | (((memaddr) t) << 8);
-
+			q=select_io_queue_from_status_addr( *(msg_ssi+1));
+			thread_outqueue(currentThread);
+			list_add(&currentThread->t_sched , &q->acc );
+			//stampare
+			memaddr *base = (memaddr *) ( *(msg_ssi+1));
+			*(base) = *(msg_ssi+2);
 
 		break;
 		case GET_PROCESSID :
@@ -84,7 +83,6 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case GET_PARENTPROCID : 
 		break;
 	}
-	
 	return TRUE;
 }
 
@@ -96,8 +94,8 @@ void ssi_entry() {
 	for (;;) {
 
 
-		sender = msgrecv(NULL, msg);
-		toBeSent = SSIdoRequest(&msg, sender,reply);
+		sender = msgrecv(NULL,&msg);
+		toBeSent = SSIdoRequest(msg, sender,reply);
 
 		if (toBeSent)
 			msgsend((memaddr) sender, reply);

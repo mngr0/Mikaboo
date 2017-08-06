@@ -39,7 +39,7 @@
 #include "exceptions.h"
 #include "ssi.h"
 #include "interrupts.h"
-
+#include "nucleus.h"
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
 /**
@@ -47,12 +47,29 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 	L'indirizzo di questa funzione è salvato nella ROM Reserved Frame
 	come gestore degli interrupt.
 */
-void intHandler(){
-    int cause;
-    (*int_old).pc -= 4;
+
+struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
    memaddr * base;
     base = (memaddr *) (TERM0ADDR);
 	*(base)=DEV_C_ACK;
+
+	int dev_number =3;// DEVICE_N_FROM_REGSTATUS(status_addr);
+	if (IS_DISK_DEVICE(status_addr)) {
+		return &(disk_queue[dev_number]);
+	} else if (IS_TAPE_DEVICE(status_addr)) {
+		return &(tape_queue[dev_number]);
+	} else if (IS_ETHERNET_DEVICE(status_addr)) {
+		return &(ethernet_queue[dev_number]);
+	} else if (IS_PRINTER_DEVICE(status_addr)) {
+		return &(printer_queue[dev_number]);
+	} else {
+		return &(terminal_queue[dev_number]);
+	}
+}
+
+void intHandler(){
+    int cause;
+    (*int_old).pc -= 4;
 
     if(currentThread != NULL){
 		saveStateIn(int_old, &currentThread->t_s);
@@ -151,7 +168,6 @@ void genericDevHandler(int interruptLineNum){
 
 
 void terminalHandler(){
-
 	// Uso la MACRO per ottenere la linea di interrupt
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
 	// Ottengo il device a priorità più alta 
@@ -162,6 +178,11 @@ void terminalHandler(){
 	//memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
 	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
 	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
+	
+	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
+	struct tcb_t * w=thread_dequeue(&q->acc);
+	msgq_add(SSI,w,NULL);
+	thread_enqueue(w,&readyQueue);
 	/*
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
 		ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
@@ -175,4 +196,5 @@ void terminalHandler(){
 	//to the first in the right queue
 	//chiama la funzione che controlla e stampa
 	//msgq_add(SSI,_proc_,a2);
+
 }

@@ -35,6 +35,30 @@ extern void* SSI;
 
 #define msgrecv(source, reply) (((struct tcb_t *) SYSCALL(SYS_RECV,(unsigned int) (source),(unsigned int) (reply),0)))
 
+#define IS_DEVICE(address) \
+(((memaddr)(address)) >= (DEV_REG_START) && \
+(((memaddr)(address)) < (TERMINAL0ADDR + (DEV_REG_SIZE * DEV_PER_INT))))
+
+#define IS_DISK_DEVICE(address) \
+((((memaddr)(address)) >= (DEV_REG_START) && \
+(((memaddr)(address)) < (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT)))))
+
+#define IS_TAPE_DEVICE(address) \
+((((memaddr)(address)) >= (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT))) && \
+(((memaddr)(address)) < (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT * 2))))
+
+#define IS_ETHERNET_DEVICE(address) \
+((((memaddr)(address)) >= (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT * 2))) && \
+(((memaddr)(address)) < (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT * 3))))
+
+#define IS_PRINTER_DEVICE(address) \
+((((memaddr)(address)) >= (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT * 3))) && \
+(((memaddr)(address)) < (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT * 4))))
+
+#define IS_TERMINAL_DEVICE(address) \
+((((memaddr)(address)) >= TERMINAL0ADDR) && \
+(((memaddr)(address)) < (TERMINAL0ADDR + (DEV_REG_SIZE * DEV_PER_INT))))
+
 static inline uintptr_t geterrno(void) {
 	uintptr_t retval;
 	struct {
