@@ -41,33 +41,6 @@ void saveStateIn(state_t *from, state_t *to){
 	to->TOD_Low             = from->TOD_Low;
 }
 
-void useExStVec(int type){
-	/*
-    if(currentProcess!=NULL)  {
-        // Se ho già fatto spectrapvec per il tipo di eccezione
-        if (currentProcess->excStVec[type*2]!=NULL){
-            // Salvo lo stato nella oldarea adeguata
-            switch(type){
-                case SPECTLB:
-                	saveStateIn(tlb_old, currentProcess->excStVec[type*2]);
-                    break;
-                case SPECPGMT:
-                	saveStateIn(pgmtrap_old, currentProcess->excStVec[type*2]);
-                    break;
-                case SPECSYSBP:
-                	saveStateIn(sysbp_old, currentProcess->excStVec[type*2]);
-                    break;
-            }
-            // Carico lo stato dalla newarea 
-            LDST(currentProcess->excStVec[(type*2)+1]);
-        }else{
-           // Altrimenti tratto come una SYS2  
-           terminateProcess(currentProcess); 
-           scheduler();
-        }
-    } 
-*/
-}
 void tlbHandler(){
     // Se un processo è eseguito dal processore salvo lo stato nella tlb_oldarea 
 	/*
@@ -104,9 +77,9 @@ void sysBpHandler(){
 					PANIC();
 
 				case SYS_SEND:
-                //a0 contiene la costante 1 (messaggio inviato)
-                //a1 contiene l'indirizzo del thread destinatario
-                //a2 contiene il puntatore al messaggio
+			                //a0 contiene la costante 1 (messaggio inviato)
+			                //a1 contiene l'indirizzo del thread destinatario
+                			//a2 contiene il puntatore al messaggio
 				msg_res=msgq_add(currentThread,a1,a2);
 				if(msg_res==-1){
 					currentThread->t_s.a1=-1;
@@ -121,7 +94,7 @@ void sysBpHandler(){
 						softBlockCount--;
 					}
 				}
-                // Evito che rientri nel codice della syscall
+        		        // Evito che rientri nel codice della syscall
 				currentThread->t_s.pc += WORD_SIZE;
 				LDST(&currentThread->t_s);
 				break;
@@ -147,35 +120,50 @@ void sysBpHandler(){
 					LDST(&currentThread->t_s);
 				}
 				break;
-			    // Altrimenti la gestione viene passata in alto 
 				default:
-			    //useExStVec(SPECSYSBP);
-				break;            
+				/*
+				    if(currentThread->sysMgr != NULL) {
+                 			msg_t *msg = allocMsg();
+                 			msg->m_message = currentThread->t_state.cause;
+                			msg->m_sender = currentThread;
+                			msg->msg_ssi.service = USR_MSG;
+               				insertMessage(&(currentThread->sysMgr->t_inbox),msg); 
+			                if (outThread(&waitQueue, currentThread->sysMgr)) {
+                       				 insertThread(&readyQueue, currentThread->sysMgr);
+                       				 softBlockCount--;
+                   			}
+                   			stopCurrentThread();
+               			    }
+				    else {
+			                    terminate(currentThread);
+					}
+					*/
+					break; 
 			}
-			
-		    // Richiamo lo scheduler 
-			scheduler();
 		// Se invece è in user mode 
 		} else if((currentThread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
 			/*
-			// Se è una system call 
-			if(a0 >= CREATEPROCESS && a0 <= WAITIO){
-			    // Gestisco come fosse una program trap 
-			    saveStateIn(sysbp_old, pgmtrap_old);
-			    // Setto il registro cause a Reserved Instruction 
-			    pgmtrap_old->CP15_Cause = CAUSE_EXCCODE_SET(pgmtrap_old->CP15_Cause, EXC_RESERVEDINSTR);
-			    // Richiamo l'handler per le pgmtrap 
-			    pgmHandler();
-			} else {
-				useExStVec(SPECSYSBP);
+			if(currentThread->sysMgr != NULL) {
+        		        msg_t *msg = allocMsg();
+                		msg->m_message = currentThread->t_state.cause;
+               			msg->m_sender = currentThread;
+		                msg->msg_ssi.service = USR_MSG;
+                		insertMessage(&(currentThread->sysMgr->t_inbox),msg); 
+		                if (outThread(&waitQueue, currentThread->sysMgr)) {
+        		            insertThread(&readyQueue, currentThread->sysMgr);
+                		    softBlockCount--;
+               			 }
+               			 stopCurrentThread();
 			}
+			else {
+                		terminate(currentThread);
+           		 }
 			*/
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
-		//useExStVec(SPECSYSBP);
-		scheduler();
+		;
 	}
-
-	PANIC();
+	//richiamo il mio amato scheduler
+	scheduler();
 }
