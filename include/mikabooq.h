@@ -12,6 +12,7 @@ struct pcb_t {
 
 	struct list_head p_children; /* list of children (hierarchy of processes) */
 	struct list_head p_siblings; /* link the other siblings (children of p_parent) */
+	struct tcb_t *prgMgr, *sysMgr,*tlbMgr;
 };
 
 #define T_STATUS_NONE  0    /* unused thread descriptor */

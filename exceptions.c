@@ -75,90 +75,117 @@ void sysBpHandler(){
 			switch(a0){
 				case 0:
 					PANIC();
-
+				//SISTEMARE CON I CASI LA SYS SEND
 				case SYS_SEND:
 			                //a0 contiene la costante 1 (messaggio inviato)
 			                //a1 contiene l'indirizzo del thread destinatario
                 			//a2 contiene il puntatore al messaggio
-				msg_res=msgq_add(currentThread,a1,a2);
-				if(msg_res==-1){
-					currentThread->t_s.a1=-1;
-				}
-				if(a1->t_status==T_STATUS_W4MSG){
-					if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
-						thread_outqueue(a1);
-						thread_enqueue(a1,&readyQueue);
-						a1->t_s.pc -= WORD_SIZE;
-						currentThread->t_status=T_STATUS_READY;
-						currentThread->t_s.a1=0;
-						softBlockCount--;
+					msg_res=msgq_add(currentThread,a1,a2);
+					if(msg_res==-1){
+						currentThread->t_s.a1=-1;
 					}
-				}
-        		        // Evito che rientri nel codice della syscall
-				currentThread->t_s.pc += WORD_SIZE;
-				LDST(&currentThread->t_s);
+					if(a1->t_status==T_STATUS_W4MSG){
+						if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
+							thread_outqueue(a1);
+							thread_enqueue(a1,&readyQueue);
+							a1->t_s.pc -= WORD_SIZE;
+							currentThread->t_status=T_STATUS_READY;
+							currentThread->t_s.a1=0;
+							softBlockCount--;
+						}
+					}
+        			        // Evito che rientri nel codice della syscall
+					currentThread->t_s.pc += WORD_SIZE;
+					LDST(&currentThread->t_s);
 				break;
 
 				case SYS_RECV:
-				//a0 contiene costante 2
-				//a1 contiene l'indirizzo del mittente(null==tutti)
-				//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
-				msg_res=msgq_get(&a1,currentThread,a2);
-				//in a2 viene messo il puntatore alla struttura messaggio
-				//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
-				if (msg_res==-1){
-					thread_outqueue(currentThread);
-					thread_enqueue(currentThread,&waitingQueue);
-					currentThread->t_wait4sender=a1;
-					currentThread->t_status=T_STATUS_W4MSG;
-					currentThread=NULL;
-					softBlockCount++;
-				}else{
-					currentThread->t_s.a3=a2;
-					// Evito che rientri nel codice della syscall
-					currentThread->t_s.pc += WORD_SIZE;
-					LDST(&currentThread->t_s);
-				}
+					//a0 contiene costante 2
+					//a1 contiene l'indirizzo del mittente(null==tutti)
+					//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
+					msg_res=msgq_get(&a1,currentThread,a2);
+					//in a2 viene messo il puntatore alla struttura messaggio
+					if (msg_res==-1){
+						thread_outqueue(currentThread);
+						thread_enqueue(currentThread,&waitingQueue);
+						currentThread->t_wait4sender=a1;
+						currentThread->t_status=T_STATUS_W4MSG;
+						currentThread=NULL;
+						softBlockCount++;
+					}
+					else{
+						//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
+						currentThread->t_s.a3=a2;
+						// Evito che rientri nel codice della syscall
+						currentThread->t_s.pc += WORD_SIZE;
+						LDST(&currentThread->t_s);
+					}
 				break;
 				default:
-				/*
-				    if(currentThread->sysMgr != NULL) {
-                 			msg_t *msg = allocMsg();
-                 			msg->m_message = currentThread->t_state.cause;
-                			msg->m_sender = currentThread;
-                			msg->msg_ssi.service = USR_MSG;
-               				insertMessage(&(currentThread->sysMgr->t_inbox),msg); 
-			                if (outThread(&waitQueue, currentThread->sysMgr)) {
-                       				 insertThread(&readyQueue, currentThread->sysMgr);
+					//check TUTTI I PUNTATORI
+				    if(currentThread->t_pcb->sysMgr != NULL) {
+					//mittente, destinatario, motivo
+					msgq_add(currentThread,currentThread->t_pcb->sysMgr,&(currentThread->t_s.CP15_Cause));
+					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
+				//	if (thread_outqueue(currentThread->t_pcb->sysMgr)) {
+						thread_outqueue(currentThread->t_pcb->sysMgr);
+                       				 thread_enqueue(currentThread->t_pcb->sysMgr,&readyQueue);
                        				 softBlockCount--;
-                   			}
-                   			stopCurrentThread();
+                   		//	}
+					thread_outqueue(currentThread);
+					thread_enqueue(currentThread,&waitingQueue);
                			    }
+				    else if(currentThread->t_pcb->prgMgr != NULL) {
+					//mittente, destinatario, motivo
+					msgq_add(currentThread,currentThread->t_pcb->prgMgr,&(currentThread->t_s.CP15_Cause));
+					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
+				//	if (thread_outqueue(currentThread->t_pcb->prgMgr)) {
+						thread_outqueue(currentThread->t_pcb->prgMgr);
+                       				 thread_enqueue(currentThread->t_pcb->prgMgr,&readyQueue);
+                       				 softBlockCount--;
+                   		//	}
+					thread_outqueue(currentThread);
+					thread_enqueue(currentThread,&waitingQueue);
+               			    }
+					/*
 				    else {
 			                    terminate(currentThread);
 					}
 					*/
-					break; 
+				break; 
 			}
 		// Se invece è in user mode 
 		} else if((currentThread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
-			/*
-			if(currentThread->sysMgr != NULL) {
-        		        msg_t *msg = allocMsg();
-                		msg->m_message = currentThread->t_state.cause;
-               			msg->m_sender = currentThread;
-		                msg->msg_ssi.service = USR_MSG;
-                		insertMessage(&(currentThread->sysMgr->t_inbox),msg); 
-		                if (outThread(&waitQueue, currentThread->sysMgr)) {
-        		            insertThread(&readyQueue, currentThread->sysMgr);
-                		    softBlockCount--;
-               			 }
-               			 stopCurrentThread();
-			}
-			else {
-                		terminate(currentThread);
-           		 }
-			*/
+			    if(currentThread->t_pcb->sysMgr != NULL) {
+					//mittente, destinatario, motivo
+					msgq_add(currentThread,currentThread->t_pcb->sysMgr,&(currentThread->t_s.CP15_Cause));
+					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
+				//	if (thread_outqueue(currentThread->t_pcb->sysMgr)) {
+						thread_outqueue(currentThread->t_pcb->sysMgr);
+                       				 thread_enqueue(currentThread->t_pcb->sysMgr,&readyQueue);
+                       				 softBlockCount--;
+                   		//	}
+					thread_outqueue(currentThread);
+					thread_enqueue(currentThread,&waitingQueue);
+               			    }
+
+				    else if(currentThread->t_pcb->prgMgr != NULL) {
+					//mittente, destinatario, motivo
+					msgq_add(currentThread,currentThread->t_pcb->prgMgr,&(currentThread->t_s.CP15_Cause));
+					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
+				//	if (thread_outqueue(currentThread->t_pcb->prgMgr)) {
+						thread_outqueue(currentThread->t_pcb->prgMgr);
+                       				 thread_enqueue(currentThread->t_pcb->prgMgr,&readyQueue);
+                       				 softBlockCount--;
+                   		//	}
+					thread_outqueue(currentThread);
+					thread_enqueue(currentThread,&waitingQueue);
+               			    }
+					/*
+				    else {
+			                    terminate(currentThread);
+					}
+					*/
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
