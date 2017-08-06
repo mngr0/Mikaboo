@@ -93,11 +93,6 @@ void ssi_entry() {
 	uintptr_t msg;
 	uintptr_t reply;
 	struct tcb_t* sender;
-	char* t= "s";
-    memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *t) << 8);
-
 	for (;;) {
 
 

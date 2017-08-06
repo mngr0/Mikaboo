@@ -91,6 +91,8 @@ struct tcb_t *thread_dequeue(struct list_head *queue);
 static inline void thread_outqueue(struct tcb_t *this) {
 	list_del(&this->t_sched);
 }
+//toglie il thread this da head, restituisce this se esiste o null altrimenti
+struct tcb_t *out_thread(struct list_head *head, struct tcb_t* this);
 
 #define for_each_thread_in_q(pos, queue) \
 	list_for_each_entry(pos, queue, t_sched)

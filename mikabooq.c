@@ -179,6 +179,24 @@ struct tcb_t *thread_dequeue(struct list_head *queue){
 		return p;
 	}
 }
+struct tcb_t * out_thread(struct list_head *head, struct tcb_t* this){
+	if(head==NULL)
+		return NULL;
+	else if(list_empty(head))
+		return NULL;
+	else{
+		struct list_head *t_temp=NULL;
+		list_for_each(t_temp, head) {
+       			 if( t_temp == &(this->t_next) ) {/* nel caso la trovo allora la elimino e lo restituisco */
+        		    list_del( &(this->t_next) );
+        		    INIT_LIST_HEAD(&(this->t_next));
+            			return this;
+       			 }
+   		 }
+   		 /* altrimenti restituisco NULL */
+   		 return NULL;
+	}
+}
 void msgq_init(void){
 
 	int i;

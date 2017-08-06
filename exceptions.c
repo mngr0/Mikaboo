@@ -127,11 +127,11 @@ void sysBpHandler(){
 					//mittente, destinatario, motivo
 					msgq_add(currentThread,currentThread->t_pcb->sysMgr,&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-				//	if (thread_outqueue(currentThread->t_pcb->sysMgr)) {
-						thread_outqueue(currentThread->t_pcb->sysMgr);
+					if (out_thread(&waitingQueue,currentThread->t_pcb->sysMgr)) {
+					//	thread_outqueue(currentThread->t_pcb->sysMgr);
                        				 thread_enqueue(currentThread->t_pcb->sysMgr,&readyQueue);
                        				 softBlockCount--;
-                   		//	}
+                   			}
 					thread_outqueue(currentThread);
 					thread_enqueue(currentThread,&waitingQueue);
                			    }
@@ -139,11 +139,11 @@ void sysBpHandler(){
 					//mittente, destinatario, motivo
 					msgq_add(currentThread,currentThread->t_pcb->prgMgr,&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-				//	if (thread_outqueue(currentThread->t_pcb->prgMgr)) {
+					if (out_thread(&waitingQueue,currentThread->t_pcb->prgMgr)) {
 						thread_outqueue(currentThread->t_pcb->prgMgr);
                        				 thread_enqueue(currentThread->t_pcb->prgMgr,&readyQueue);
                        				 softBlockCount--;
-                   		//	}
+                   			}
 					thread_outqueue(currentThread);
 					thread_enqueue(currentThread,&waitingQueue);
                			    }
@@ -160,11 +160,11 @@ void sysBpHandler(){
 					//mittente, destinatario, motivo
 					msgq_add(currentThread,currentThread->t_pcb->sysMgr,&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-				//	if (thread_outqueue(currentThread->t_pcb->sysMgr)) {
+					if (out_thread(&waitingQueue,currentThread->t_pcb->sysMgr)) {
 						thread_outqueue(currentThread->t_pcb->sysMgr);
                        				 thread_enqueue(currentThread->t_pcb->sysMgr,&readyQueue);
                        				 softBlockCount--;
-                   		//	}
+                   			}
 					thread_outqueue(currentThread);
 					thread_enqueue(currentThread,&waitingQueue);
                			    }
@@ -173,11 +173,11 @@ void sysBpHandler(){
 					//mittente, destinatario, motivo
 					msgq_add(currentThread,currentThread->t_pcb->prgMgr,&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-				//	if (thread_outqueue(currentThread->t_pcb->prgMgr)) {
+					if (out_thread(&waitingQueue,currentThread->t_pcb->prgMgr)) {
 						thread_outqueue(currentThread->t_pcb->prgMgr);
                        				 thread_enqueue(currentThread->t_pcb->prgMgr,&readyQueue);
                        				 softBlockCount--;
-                   		//	}
+                   			}
 					thread_outqueue(currentThread);
 					thread_enqueue(currentThread,&waitingQueue);
                			    }
