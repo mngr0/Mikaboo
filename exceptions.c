@@ -2,13 +2,8 @@
 #include <uARMconst.h>
 #include <uARMtypes.h>
 #include <arch.h>
-
 #include "const.h"
-
-
 #include "mikabooq.h"
-
-
 #include "scheduler.h"
 #include "nucleus.h"
 
@@ -50,6 +45,16 @@ void tlbHandler(){
 
 	useExStVec(SPECTLB);
 	*/
+	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
+	memaddr * base;
+	base = (memaddr *) (TERM0ADDR);
+	*(base)=DEV_C_ACK;
+	struct dev_acc_ctrl* q;
+	q=select_io_queue_from_status_addr( *intLine);
+	 struct tcb_t * w=thread_dequeue(&q->acc);
+	 msgq_add(SSI,w,(uintptr_t)NULL);
+	 thread_enqueue(w,&readyQueue);
+	scheduler();
 }
 
 void pgmHandler(){
@@ -103,7 +108,7 @@ void sysBpHandler(){
 					//a0 contiene costante 2
 					//a1 contiene l'indirizzo del mittente(null==tutti)
 					//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
-					msg_res=msgq_get(&a1,currentThread,a2);
+					msg_res=msgq_get(&a1,currentThread,(uintptr_t *)a2);
 					//in a2 viene messo il puntatore alla struttura messaggio
 					if (msg_res==-1){
 						thread_outqueue(currentThread);
@@ -125,7 +130,7 @@ void sysBpHandler(){
 					//check TUTTI I PUNTATORI
 				    if(currentThread->t_pcb->sysMgr != NULL) {
 					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->sysMgr,&(currentThread->t_s.CP15_Cause));
+					msgq_add(currentThread,currentThread->t_pcb->sysMgr,(uintptr_t)&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
 					if (out_thread(&waitingQueue,currentThread->t_pcb->sysMgr)) {
 					//	thread_outqueue(currentThread->t_pcb->sysMgr);
@@ -137,7 +142,7 @@ void sysBpHandler(){
                			    }
 				    else if(currentThread->t_pcb->prgMgr != NULL) {
 					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->prgMgr,&(currentThread->t_s.CP15_Cause));
+					msgq_add(currentThread,currentThread->t_pcb->prgMgr,(unsigned int)&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
 					if (out_thread(&waitingQueue,currentThread->t_pcb->prgMgr)) {
 						thread_outqueue(currentThread->t_pcb->prgMgr);
@@ -158,7 +163,7 @@ void sysBpHandler(){
 		} else if((currentThread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
 			    if(currentThread->t_pcb->sysMgr != NULL) {
 					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->sysMgr,&(currentThread->t_s.CP15_Cause));
+					msgq_add(currentThread,currentThread->t_pcb->sysMgr,(uintptr_t)&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
 					if (out_thread(&waitingQueue,currentThread->t_pcb->sysMgr)) {
 						thread_outqueue(currentThread->t_pcb->sysMgr);
@@ -171,7 +176,7 @@ void sysBpHandler(){
 
 				    else if(currentThread->t_pcb->prgMgr != NULL) {
 					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->prgMgr,&(currentThread->t_s.CP15_Cause));
+					msgq_add(currentThread,currentThread->t_pcb->prgMgr,(uintptr_t)&(currentThread->t_s.CP15_Cause));
 					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
 					if (out_thread(&waitingQueue,currentThread->t_pcb->prgMgr)) {
 						thread_outqueue(currentThread->t_pcb->prgMgr);

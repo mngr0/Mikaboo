@@ -15,7 +15,7 @@
   * You should have received a copy of the GNU General Public licenses 			*
   * along with kaya2014.  If not, see <http://www.gnu.org/licenses/>.			*
   ******************************************************************************/
- 
+
 /******************************** interrupts.c **********************************
  *
  *	Questo modulo implementa la gestione delle eccezioni interrupt.
@@ -28,7 +28,7 @@
 #include <libuarm.h>
 #include <uARMconst.h>
 #include <arch.h>
-	
+
 
 #include "const.h"
 
@@ -48,12 +48,13 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 	come gestore degli interrupt.
 */
 
-struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
-   memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-	*(base)=DEV_C_ACK;
+void APHERE(){}
+void BPHERE(){}
+void CPHERE(){}
 
-	int dev_number =3;// DEVICE_N_FROM_REGSTATUS(status_addr);
+
+struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
+	int dev_number =0;// DEVICE_N_FROM_REGSTATUS(status_addr);
 	if (IS_DISK_DEVICE(status_addr)) {
 		return &(disk_queue[dev_number]);
 	} else if (IS_TAPE_DEVICE(status_addr)) {
@@ -67,46 +68,49 @@ struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
 	}
 }
 
+int cause;
 void intHandler(){
-    int cause;
-    (*int_old).pc -= 4;
 
-    if(currentThread != NULL){
+	(*int_old).pc -= 4;
+	BPHERE();
+	if(currentThread != NULL){
 		saveStateIn(int_old, &currentThread->t_s);
-    }
+
 	// prendo il contenuto del registro cause 
-	cause = getCAUSE();
+		cause = getCAUSE();
+		APHERE();
 	// Se la causa dell'interrupt è la linea 0 
-	if(CAUSE_IP_GET(cause, IL_IPI)){
-		lineOneTwoHandler(IL_IPI);
-	} else 
+		if(CAUSE_IP_GET(cause, IL_IPI)){
+			lineOneTwoHandler(IL_IPI);
+		} else 
 	// linea 1 
-	if(CAUSE_IP_GET(cause, IL_CPUTIMER)){
-		lineOneTwoHandler(IL_CPUTIMER);
-	} else
+		if(CAUSE_IP_GET(cause, IL_CPUTIMER)){
+			lineOneTwoHandler(IL_CPUTIMER);
+		} else
 	//  linea 2 timer 
-	if (CAUSE_IP_GET(cause, IL_TIMER)){
-	    timerHandler();
-	} else
+		if (CAUSE_IP_GET(cause, IL_TIMER)){
+			timerHandler();
+		} else
     // linea 3 disk 
-    if (CAUSE_IP_GET(cause, IL_DISK)){
-        genericDevHandler(IL_DISK);
-    } else
+		if (CAUSE_IP_GET(cause, IL_DISK)){
+			genericDevHandler(IL_DISK);
+		} else
     // linea 4 tape
-    if (CAUSE_IP_GET(cause, IL_TAPE)){
-        genericDevHandler(IL_TAPE);
-    } else
+		if (CAUSE_IP_GET(cause, IL_TAPE)){
+			genericDevHandler(IL_TAPE);
+		} else
     // linea 5 network 
-    if (CAUSE_IP_GET(cause, IL_ETHERNET)){
-        genericDevHandler(IL_ETHERNET);
-    } else
+		if (CAUSE_IP_GET(cause, IL_ETHERNET)){
+			genericDevHandler(IL_ETHERNET);
+		} else
     // linea 6 printer
-    if (CAUSE_IP_GET(cause, INT_PRINTER)){
-        genericDevHandler(IL_PRINTER);
-    } else
+		if (CAUSE_IP_GET(cause, INT_PRINTER)){
+			genericDevHandler(IL_PRINTER);
+		} else
     // linea 7 terminal 
-	if (CAUSE_IP_GET(cause, INT_TERMINAL)){
-	    terminalHandler();
+		if (CAUSE_IP_GET(cause, INT_TERMINAL)){
+			terminalHandler();
+		}
 	}
 	scheduler();
 }
@@ -168,6 +172,9 @@ void genericDevHandler(int interruptLineNum){
 
 
 void terminalHandler(){
+	memaddr * base;
+	base = (memaddr *) (TERM0ADDR);
+	*(base)=DEV_C_ACK;
 	// Uso la MACRO per ottenere la linea di interrupt
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
 	// Ottengo il device a priorità più alta 
@@ -179,11 +186,12 @@ void terminalHandler(){
 	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
 	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
 	
-	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
-	struct tcb_t * w=thread_dequeue(&q->acc);
-	msgq_add(SSI,w,NULL);
-	thread_enqueue(w,&readyQueue);
-	/*
+	 struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
+	 struct tcb_t * w=thread_dequeue(&q->acc);
+	 msgq_add(SSI,w,(uintptr_t)NULL);
+	 thread_enqueue(w,&readyQueue);
+
+	 /*
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
 		ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
 	}

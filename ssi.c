@@ -28,10 +28,19 @@ struct dev_acc_ctrl* q;
     // *reply = msg_ssi.reply;
 //}
 
-void ssi_do_io(struct dev_acc_ctrl device , uintptr_t command,uintptr_t data1,uintptr_t data2){
+void DPHERE(){}
+void ssi_do_io(uintptr_t * msg_ssi){
 	//controlla e scrive se necessario
 	//controllare -> device.state
 	//scrivere 
+	q=select_io_queue_from_status_addr( *(msg_ssi+1));
+	thread_outqueue(currentThread);
+	thread_enqueue(currentThread , &q->acc );
+	//thread_enqueue(currentThread , &waitingQueue);
+	//stampare
+	memaddr *base = (memaddr *) ( *(msg_ssi+1));
+	*(base) = *(msg_ssi+2);
+	DPHERE();
 }
 
 unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t reply) {
@@ -68,14 +77,8 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case WAIT_FOR_CLOCK:
 		break;
 		case DO_IO:
-			q=select_io_queue_from_status_addr( *(msg_ssi+1));
-			thread_outqueue(currentThread);
-			list_add(&currentThread->t_sched , &q->acc );
-			//stampare
-			memaddr *base = (memaddr *) ( *(msg_ssi+1));
-			*(base) = *(msg_ssi+2);
-
-		break;
+			ssi_do_io(msg_ssi);
+			break;
 		case GET_PROCESSID :
 		break;
 		case GET_MYTHREADID :
@@ -85,6 +88,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 	}
 	return TRUE;
 }
+void ACHERE(){}
 
 void ssi_entry() {
 	unsigned int toBeSent;
@@ -93,9 +97,9 @@ void ssi_entry() {
 	struct tcb_t* sender;
 	for (;;) {
 
-
+		ACHERE();
 		sender = msgrecv(NULL,&msg);
-		toBeSent = SSIdoRequest(msg, sender,reply);
+		toBeSent = SSIdoRequest((uintptr_t*)msg, sender,reply);
 
 		if (toBeSent)
 			msgsend((memaddr) sender, reply);
