@@ -6,6 +6,7 @@
 #include "scheduler.h"
 unsigned int* service;
 struct dev_acc_ctrl* q;
+
 /* Tramite questa funzione un thread può richiedere un servizio. Se la richiesta 
  * fatta dal Thread non esiste allora esso e tutta la sua progenie verranno uccisi.
  * Il thread che fa la richiesta deve obbligatoriamente restare in attesa di una 
@@ -28,6 +29,34 @@ struct dev_acc_ctrl* q;
     // *reply = msg_ssi.reply;
 //}
 
+unsigned int specPrgMgr(struct tcb_t* mgr,struct tcb_t* sender) {
+    if (sender->t_pcb->prgMgr != NULL || mgr == NULL) {
+  //      terminate(sender);
+        return FALSE;
+    } else {
+        sender->t_pcb->prgMgr = mgr;
+        return TRUE;
+    }
+}
+
+unsigned int specTlbMgr(struct tcb_t* mgr,struct tcb_t* sender) {
+    if (sender->t_pcb->tlbMgr != NULL || mgr == NULL) {
+    //    terminate(sender);
+        return FALSE;
+    } else {
+        sender->t_pcb->tlbMgr = mgr;
+        return TRUE;
+    }
+}
+unsigned int specSysMgr(struct tcb_t* mgr,struct tcb_t* sender) {
+    if (sender->t_pcb->sysMgr != NULL || mgr == NULL){
+     //   terminate(sender);
+        return FALSE;
+    } else {
+        sender->t_pcb->sysMgr = mgr;
+        return TRUE;
+    }
+}
 void DPHERE(){}
 void ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	//controlla e scrive se necessario
@@ -67,11 +96,14 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case TERMINATE_THREAD :
 		break;
 		case SETPGMMGR:
+			specPrgMgr((struct tcb_t*)*(msg_ssi+1),sender);
 		break;
 		case SETTLBMGR:
+			specTlbMgr((struct tcb_t*)*(msg_ssi+1),sender);
 		break;
 		case SETSYSMGR:
-		break;
+			specSysMgr((struct tcb_t*)*(msg_ssi+1),sender);
+		break;	
 		case GET_CPUTIME :
 		break;
 		case WAIT_FOR_CLOCK:
@@ -90,9 +122,10 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 }
 void ACHERE(){}
 
-struct tcb_t* sender;
 
 void ssi_entry() {
+	struct tcb_t* sender;
+
 	unsigned int toBeSent;
 
 	uintptr_t msg;
