@@ -94,12 +94,6 @@ static state_t tmpstate;
 memaddr stackalloc;
 
 void test(void) {
-    char t= 'm';
-    char *s=&t;
-    memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *s) << 8);
-
     ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
 
 }

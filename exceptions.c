@@ -55,7 +55,7 @@ void pgmHandler(){
 	useExStVec(SPECPGMT);
 	*/
 }
-unsigned int temp=42; 
+
 void sysBpHandler(){
 	saveStateIn(sysbp_old, &currentThread->t_s);
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
