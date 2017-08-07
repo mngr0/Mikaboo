@@ -29,20 +29,22 @@
 static struct tcb_t* printid;
 
 static void ttyprintstring(devaddr device, char* s) {
-    /*
+    
     uintptr_t status;
 
     for (; *s; s++) {
         status = do_terminal_io(device, DEV_TTRS_C_TRSMCHAR | (*s << 8));
-        switch (status & 0xff) {
+/*    
+    switch (status & 0xff) {
             case DEV_S_READY:
             case DEV_TTRS_S_CHARTRSM:
                 break;
             default:
                 return;
         }
+*/
     }
-    */
+    
 }
 
 void tty0out_thread(void) {

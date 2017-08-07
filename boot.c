@@ -162,15 +162,15 @@ int main() {
 	//disabilita memoria virtuale
 	ttust->t_s.CP15_Control =CP15_DISABLE_VM (ttust->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttust->t_s.pc=ttost->t_s.v6=(memaddr) tist;
+	ttust->t_s.pc=ttost->t_s.v6=(memaddr) test;
 	//assegno valore di SP(CHECK)
 	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE) ;
 
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttust,&readyQueue);
-	//thread_enqueue(ttost,&readyQueue);
+//	thread_enqueue(ttost,&readyQueue);
 
-	threadCount=3;
+	threadCount=2;
 
 /*
 	char* t= "n";
