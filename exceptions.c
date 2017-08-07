@@ -45,16 +45,6 @@ void tlbHandler(){
 
 	useExStVec(SPECTLB);
 	*/
-	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
-	memaddr * base;
-	base = (memaddr *) (TERM0ADDR);
-	*(base)=DEV_C_ACK;
-	struct dev_acc_ctrl* q;
-	q=select_io_queue_from_status_addr( *intLine);
-	 struct tcb_t * w=thread_dequeue(&q->acc);
-	 msgq_add(SSI,w,(uintptr_t)NULL);
-	 thread_enqueue(w,&readyQueue);
-	scheduler();
 }
 
 void pgmHandler(){
@@ -65,7 +55,7 @@ void pgmHandler(){
 	useExStVec(SPECPGMT);
 	*/
 }
-
+unsigned int temp=42; 
 void sysBpHandler(){
 	saveStateIn(sysbp_old, &currentThread->t_s);
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
@@ -82,9 +72,9 @@ void sysBpHandler(){
 					PANIC();
 				//SISTEMARE CON I CASI LA SYS SEND
 				case SYS_SEND:
-			                //a0 contiene la costante 1 (messaggio inviato)
-			                //a1 contiene l'indirizzo del thread destinatario
-                			//a2 contiene il puntatore al messaggio
+	                //a0 contiene la costante 1 (messaggio inviato)
+	                //a1 contiene l'indirizzo del thread destinatario
+        			//a2 contiene il puntatore al messaggio
 					msg_res=msgq_add(currentThread,a1,a2);
 					if(msg_res==-1){
 						currentThread->t_s.a1=-1;
@@ -99,7 +89,7 @@ void sysBpHandler(){
 							softBlockCount--;
 						}
 					}
-        			        // Evito che rientri nel codice della syscall
+        			// Evito che rientri nel codice della syscall
 					currentThread->t_s.pc += WORD_SIZE;
 					LDST(&currentThread->t_s);
 				break;
@@ -122,10 +112,13 @@ void sysBpHandler(){
 						//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
 						currentThread->t_s.a3=a2;
 						// Evito che rientri nel codice della syscall
+						currentThread->t_s.a1=a1;
+
 						currentThread->t_s.pc += WORD_SIZE;
 						LDST(&currentThread->t_s);
 					}
 				break;
+
 				default:
 					//check TUTTI I PUNTATORI
 				    if(currentThread->t_pcb->sysMgr != NULL) {
@@ -154,7 +147,7 @@ void sysBpHandler(){
                			    }
 					/*
 				    else {
-			                    terminate(currentThread);
+			            terminate(currentThread);
 					}
 					*/
 				break; 

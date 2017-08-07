@@ -29,13 +29,13 @@ struct dev_acc_ctrl* q;
 //}
 
 void DPHERE(){}
-void ssi_do_io(uintptr_t * msg_ssi){
+void ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	//controlla e scrive se necessario
 	//controllare -> device.state
 	//scrivere 
 	q=select_io_queue_from_status_addr( *(msg_ssi+1));
-	thread_outqueue(currentThread);
-	thread_enqueue(currentThread , &q->acc );
+	thread_outqueue(sender);
+	thread_enqueue(sender , &q->acc );
 	//thread_enqueue(currentThread , &waitingQueue);
 	//stampare
 	memaddr *base = (memaddr *) ( *(msg_ssi+1));
@@ -77,7 +77,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case WAIT_FOR_CLOCK:
 		break;
 		case DO_IO:
-			ssi_do_io(msg_ssi);
+			ssi_do_io(msg_ssi,sender);
 			break;
 		case GET_PROCESSID :
 		break;
@@ -90,15 +90,18 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 }
 void ACHERE(){}
 
+struct tcb_t* sender;
+
 void ssi_entry() {
 	unsigned int toBeSent;
+
 	uintptr_t msg;
 	uintptr_t reply;
-	struct tcb_t* sender;
 	for (;;) {
 
-		ACHERE();
+		
 		sender = msgrecv(NULL,&msg);
+		ACHERE();
 		toBeSent = SSIdoRequest((uintptr_t*)msg, sender,reply);
 
 		if (toBeSent)
