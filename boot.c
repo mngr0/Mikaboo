@@ -119,19 +119,20 @@ int main() {
 	//disabilita memoria virtuale
 	((struct tcb_t* )SSI)->t_s.CP15_Control =CP15_DISABLE_VM (((struct tcb_t* )SSI)->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	((struct tcb_t* )SSI)->t_s.pc=((struct tcb_t* )SSI)->t_s.v6=(memaddr) ssi_entry;
+	((struct tcb_t* )SSI)->t_s.pc=(memaddr) ssi_entry;
 	//assegno valore di SP(CHECK)
 	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
 
 
 
+
+ /*
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
 	ttost=thread_alloc(starting_process);
 	if (ttost==NULL){
 		PANIC();
 	}
-
 	//abilita interrupt e kernel mode (CHECK)
 	ttost->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttost->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
@@ -140,6 +141,8 @@ int main() {
 	ttost->t_s.pc=(memaddr) tost;
 	//assegno valore di SP(CHECK)
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
+*/
+
 
 
 	ttust=thread_alloc(starting_process);

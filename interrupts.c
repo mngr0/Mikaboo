@@ -71,11 +71,12 @@ struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
 
 int cause;
 void intHandler(){
-
+	int qwe=0;
 	(*int_old).pc -= 4;
 
 	if(currentThread != NULL){
 		CPHERE();
+		qwe=1;
 		saveStateIn(int_old, &currentThread->t_s);
 	}
 		cause = getCAUSE();
@@ -112,7 +113,9 @@ void intHandler(){
 		if (CAUSE_IP_GET(cause, INT_TERMINAL)){
 			terminalHandler();
 		}
-	
+	//if(!qwe){
+	//	currentThread=NULL;
+	//}
 	scheduler();
 }
 
@@ -171,6 +174,10 @@ void genericDevHandler(int interruptLineNum){
 	*/
 }
 
+#define TERM_STATUS_READ   0x00000000
+#define TERM_COMMAND_READ   0x00000004
+#define TERM_STATUS_WRITE   0x00000008
+#define TERM_COMMAND_WRITE   0x0000000C
 
 void terminalHandler(){
 	memaddr * base;
@@ -189,6 +196,7 @@ void terminalHandler(){
 	AAHERE();
 	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
 	struct tcb_t * w=thread_dequeue(&q->acc);
+	w->t_s.pc -= WORD_SIZE;
 	msgq_add(SSI,w,(uintptr_t)NULL);
 	thread_enqueue(w,&readyQueue);
 	BPHERE();
