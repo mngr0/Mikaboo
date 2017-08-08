@@ -43,31 +43,22 @@ void sysBpHandler(){
 	*(base + 3) = 2 | (((memaddr) l) << 8);
 }
 */
-void ABHERE(){}
-
 void tist() {
-
 	char r='e';
 	while (1){
-		ABHERE();
 		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (r<<8));
 		//memaddr *base = (memaddr *) (TERM0ADDR);
 		//*(base) = 2 | (((memaddr) 't') << 8);
 	}
 }
 
-
 char ot,ut;
 char* or, *ur;
-
 
 void tust() {
 	ut= 'z';
 	ur="d";
-
-	memaddr * base;
-	base = (memaddr *) (TERM0ADDR);
-
+	memaddr * base = (memaddr *) (TERM0ADDR);
 	while (1){
 		msgsend(ttost, &ut);
 		ut--;
@@ -75,19 +66,19 @@ void tust() {
 			ut='z';
 		}
 		msgrecv(ttost, &ur);
-		*(base) = 2 | (((memaddr) *ur) << 8);
+		// *(base) = 2 | (((memaddr) *ur) << 8);
+		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*ur << 8));
 	}
 }
 
 void tost() {
 	ot= 'A';
 	or="P";
-
 	memaddr *base = (memaddr *) (TERM0ADDR);
-
 	while(1){
 		msgrecv(ttust, &or);
-		*(base) = 2 | (((memaddr) *or) << 8);
+		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*or << 8));
+		// *(base) = 2 | (((memaddr) *or) << 8);
 		msgsend(ttust, &ot);
 		ot++;
 		if(ot== 'Z'+1){
@@ -129,30 +120,31 @@ int main() {
 	//disabilita memoria virtuale
 	((struct tcb_t* )SSI)->t_s.CP15_Control =CP15_DISABLE_VM (((struct tcb_t* )SSI)->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	((struct tcb_t* )SSI)->t_s.pc=((struct tcb_t* )SSI)->t_s.v6=(memaddr) ssi_entry;
+	((struct tcb_t* )SSI)->t_s.pc=(memaddr) ssi_entry;
 	//assegno valore di SP(CHECK)
-	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
+	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE;
 
-
-
+ 
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
-	ttost=thread_alloc(starting_process);
+	struct pcb_t* ptost=proc_alloc(starting_process);
+	ttost=thread_alloc(ptost);
 	if (ttost==NULL){
 		PANIC();
 	}
-
 	//abilita interrupt e kernel mode (CHECK)
 	ttost->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttost->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
 	ttost->t_s.CP15_Control =CP15_DISABLE_VM (ttost->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttost->t_s.pc=ttost->t_s.v6=(memaddr) tost;
+	ttost->t_s.pc=(memaddr) tost;
 	//assegno valore di SP(CHECK)
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
 
+	struct pcb_t* ptust;
+	ptust=proc_alloc(starting_process);
 
-	ttust=thread_alloc(starting_process);
+	ttust=thread_alloc(ptust);
 	if (ttust==NULL){
 		PANIC();
 	}
@@ -162,13 +154,13 @@ int main() {
 	//disabilita memoria virtuale
 	ttust->t_s.CP15_Control =CP15_DISABLE_VM (ttust->t_s.CP15_Control);
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttust->t_s.pc=ttost->t_s.v6=(memaddr) test;
+	ttust->t_s.pc=(memaddr) test;
 	//assegno valore di SP(CHECK)
-	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE) ;
+	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE);
 
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttust,&readyQueue);
-//	thread_enqueue(ttost,&readyQueue);
+	//thread_enqueue(ttost,&readyQueue);
 
 	threadCount=2;
 

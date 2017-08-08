@@ -25,26 +25,23 @@
 
 #define QPAGE FRAME_SIZE
 
-
+void ACHERE(){}
 static struct tcb_t* printid;
+    
+uintptr_t status;
 
 static void ttyprintstring(devaddr device, char* s) {
-    
-    uintptr_t status;
-
     for (; *s; s++) {
         status = do_terminal_io(device, DEV_TTRS_C_TRSMCHAR | (*s << 8));
-/*    
-    switch (status & 0xff) {
+        ACHERE();
+        switch (status & 0xff) {
             case DEV_S_READY:
             case DEV_TTRS_S_CHARTRSM:
                 break;
             default:
                 return;
         }
-*/
     }
-    
 }
 
 void tty0out_thread(void) {
@@ -94,12 +91,6 @@ static state_t tmpstate;
 memaddr stackalloc;
 
 void test(void) {
-    char t= 'm';
-    char *s=&t;
-    memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *s) << 8);
-
     ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
 
 }

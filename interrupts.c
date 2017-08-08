@@ -51,10 +51,11 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 void APHERE(){}
 void BPHERE(){}
 void CPHERE(){}
-
+void AAHERE(){}
 
 struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
 	int dev_number =0;// DEVICE_N_FROM_REGSTATUS(status_addr);
+	return &(terminal_queue[dev_number]);
 	if (IS_DISK_DEVICE(status_addr)) {
 		return &(disk_queue[dev_number]);
 	} else if (IS_TAPE_DEVICE(status_addr)) {
@@ -70,13 +71,14 @@ struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
 
 int cause;
 void intHandler(){
-
+	int qwe=0;
 	(*int_old).pc -= 4;
-	BPHERE();
+
 	if(currentThread != NULL){
+		CPHERE();
+		qwe=1;
 		saveStateIn(int_old, &currentThread->t_s);
 	}
-	// prendo il contenuto del registro cause 
 		cause = getCAUSE();
 
 	// Se la causa dell'interrupt è la linea 0 
@@ -89,7 +91,7 @@ void intHandler(){
 		} else
 	//  linea 2 timer 
 		if (CAUSE_IP_GET(cause, IL_TIMER)){
-			timerHandler();
+			//timerHandler();
 		} else
     // linea 3 disk 
 		if (CAUSE_IP_GET(cause, IL_DISK)){
@@ -111,7 +113,7 @@ void intHandler(){
 		if (CAUSE_IP_GET(cause, INT_TERMINAL)){
 			terminalHandler();
 		}
-	
+
 	scheduler();
 }
 
@@ -170,6 +172,10 @@ void genericDevHandler(int interruptLineNum){
 	*/
 }
 
+#define TERM_STATUS_READ   0x00000000
+#define TERM_COMMAND_READ   0x00000004
+#define TERM_STATUS_WRITE   0x00000008
+#define TERM_COMMAND_WRITE   0x0000000C
 
 #define TERM_STATUS_READ   0x00000000
 #define TERM_COMMAND_READ   0x00000004
@@ -188,15 +194,16 @@ void terminalHandler(){
 	memaddr  terminalRegister = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
 	//memaddr* statusRegRead    = (memaddr*) (terminalRegister + TERM_STATUS_READ);
 	//memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
-	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
+	memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
 	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
-	
+
+	AAHERE();
 	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
 	struct tcb_t * w=thread_dequeue(&q->acc);
 	w->t_s.pc -= WORD_SIZE;
-	msgq_add(SSI,w,(uintptr_t)NULL);
-
+	msgq_add(SSI,w,(uintptr_t)statusRegWrite);
 	thread_enqueue(w,&readyQueue);
+	BPHERE();
 
 	 /*
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
@@ -207,9 +214,6 @@ void terminalHandler(){
 		ack(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
 	}
 	*/
-	//sent message by SSI
-	//to the first in the right queue
-	//chiama la funzione che controlla e stampa
-	//msgq_add(SSI,_proc_,a2);
+
 
 }
