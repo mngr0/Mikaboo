@@ -1,4 +1,4 @@
- /*******************************************************************************
+	 /*******************************************************************************
   * Copyright 2014, Devid Farinelli, Erik Minarini, Alberto Nicoletti          	*
   * This file is part of kaya2014.       									    *
   *																				*
@@ -75,10 +75,10 @@ void intHandler(){
 	BPHERE();
 	if(currentThread != NULL){
 		saveStateIn(int_old, &currentThread->t_s);
-
+	}
 	// prendo il contenuto del registro cause 
 		cause = getCAUSE();
-		APHERE();
+
 	// Se la causa dell'interrupt è la linea 0 
 		if(CAUSE_IP_GET(cause, IL_IPI)){
 			lineOneTwoHandler(IL_IPI);
@@ -111,7 +111,7 @@ void intHandler(){
 		if (CAUSE_IP_GET(cause, INT_TERMINAL)){
 			terminalHandler();
 		}
-	}
+	
 	scheduler();
 }
 
@@ -171,6 +171,11 @@ void genericDevHandler(int interruptLineNum){
 }
 
 
+#define TERM_STATUS_READ   0x00000000
+#define TERM_COMMAND_READ   0x00000004
+#define TERM_STATUS_WRITE   0x00000008
+#define TERM_COMMAND_WRITE   0x0000000C
+
 void terminalHandler(){
 	memaddr * base;
 	base = (memaddr *) (TERM0ADDR);
@@ -186,10 +191,12 @@ void terminalHandler(){
 	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
 	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
 	
-	 struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
-	 struct tcb_t * w=thread_dequeue(&q->acc);
-	 msgq_add(SSI,w,(uintptr_t)NULL);
-	 thread_enqueue(w,&readyQueue);
+	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
+	struct tcb_t * w=thread_dequeue(&q->acc);
+	w->t_s.pc -= WORD_SIZE;
+	msgq_add(SSI,w,(uintptr_t)NULL);
+
+	thread_enqueue(w,&readyQueue);
 
 	 /*
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
