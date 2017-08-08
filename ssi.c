@@ -69,32 +69,42 @@ void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply){
 }
 
 unsigned int specPrgMgr(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply) {
+
     if (sender->t_pcb->prgMgr != NULL || mgr == NULL) {
   //      terminate(sender);
         return FALSE;
     } else {
+    *reply=NULL;
+
         sender->t_pcb->prgMgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;
     }
 }
 
+
 unsigned int specTlbMgr(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply) {
+
     if (sender->t_pcb->tlbMgr != NULL || mgr == NULL) {
     //    terminate(sender);
         return FALSE;
     } else {
+    *reply=NULL;
+
         sender->t_pcb->tlbMgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;
     }
 }
-unsigned int specSysMgr(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply) {
+
+
+unsigned int specSysMgr(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* reply) {
     if (sender->t_pcb->sysMgr != NULL || mgr == NULL){
      //   terminate(sender);
         return FALSE;
     } else {
         sender->t_pcb->sysMgr = mgr;
+
         *reply=(unsigned int) NULL;
         return TRUE;
     }
@@ -115,10 +125,43 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	*(base) = *(msg_ssi+2);
 	return FALSE;
 }
+void ssi_create_thread(state_t* state,struct tcb_t* sender,uintptr_t * reply){
+    struct tcb_t* new=thread_alloc(sender->t_pcb);
+    if(new!=NULL)
+        saveStateIn(state,&(new->t_s));
+    *reply=(unsigned int)new;
+}
+void ssi_create_process(state_t* state,struct tcb_t* sender,uintptr_t * reply){
+    struct pcb_t* new_proc=proc_alloc(sender->t_pcb);
+    struct tcb_t* new_thread=thread_alloc(new_proc);
+    if(new_thread!=NULL)
+        saveStateIn(state,&(new_thread->t_s));
+
+    *reply=(unsigned int)new_thread;
+}
+unsigned int ssi_terminate_thread(struct tcb_t* sender){
+    struct pcb_t* parent=sender->t_pcb;
+    thread_outqueue(sender);
+    thread_free(sender);
+    if(proc_firstthread(parent)==NULL){
+        //ammazzo tutti i figli e i suoi thread
+        exterminate_proc(parent);
+        //suicidio eroico
+        proc_delete(parent);
+    }
+    threadCount--;
+    return FALSE;
+}
+unsigned int ssi_terminate_process(struct tcb_t * sender){
+    struct pcb_t* parent=sender->t_pcb;
+    exterminate_proc(parent);
+    return FALSE;
+
 
 unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){
 	*reply =(unsigned int)  sender;
 	return TRUE;
+
 }
 
 unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t* reply) {
@@ -132,6 +175,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 	switch (*service) {
         // service request values 
 		case GET_ERRNO:
+
 		//*reply = (unsigned int) createBrother((state_t *) payload);
 			break;
 		case CREATE_PROCESS:
@@ -158,12 +202,12 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 
 		case GET_CPUTIME:
 			return TRUE;
-			break;
 
 		case WAIT_FOR_CLOCK:
 			break;
 
 		case DO_IO:
+
 			return ssi_do_io(msg_ssi,sender);
 			break;
 		case GET_PROCESSID :
@@ -175,6 +219,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 		case GET_PARENTPROCID: 
 			*reply =(unsigned int)  sender->t_pcb->p_parent;
 			break;
+
 	}
 	return TRUE;
 }
@@ -186,9 +231,11 @@ void ssi_entry() {
 	uintptr_t reply;
 	for (;;) {
 		sender = msgrecv(NULL,&msg);
+
 		toBeSent = SSIdoRequest((uintptr_t*)msg, sender,&reply);
 		if (toBeSent)
 			msgsend((memaddr) sender, &reply);
+
 	}
 }
 
