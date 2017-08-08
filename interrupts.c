@@ -143,8 +143,14 @@ void timerHandler(){
 void ack(int intLine, int device, int statusReg, memaddr *commandReg){
 	//memaddr *semDev 		 = getSemDev(intLine, device);
 	//memaddr *kernelStatusDev = getKernelStatusDev(intLine, device);
-	//(*commandReg) = DEV_C_ACK;
+	(*commandReg) = DEV_C_ACK;
+	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( intLine);
+	struct tcb_t * w=thread_dequeue(&q->acc);
+	w->t_s.pc -= WORD_SIZE;
+	msgq_add(SSI,w,(uintptr_t)statusReg);
+	thread_enqueue(w,&readyQueue);
 }
+
 
 
 void lineOneTwoHandler(int interruptLineNum){
@@ -158,8 +164,9 @@ void lineOneTwoHandler(int interruptLineNum){
 	Handler per gli interrupt di un tipo di device generico (disk, tape, network, printer)
 	Manda un ACK al device ed esegue una V sul semaforo associato al device.
 */
+#define COMMAND_REG_OFFSET 4
+
 void genericDevHandler(int interruptLineNum){
-	/*
 	// Uso la MACRO per ottenere la linea di interrupt 
 	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(interruptLineNum);
 	// Ottengo il device a priorità più alta 
@@ -168,8 +175,7 @@ void genericDevHandler(int interruptLineNum){
 	memaddr *commandReg = (memaddr*) (DEV_REG_ADDR(interruptLineNum, device) + COMMAND_REG_OFFSET);
 	// Ottengo lo status register del device 
 	memaddr *statusReg 	= (memaddr*) (DEV_REG_ADDR(interruptLineNum, device));
-	ackAndVerhogen(interruptLineNum, device, (*statusReg), commandReg);
-	*/
+	ack(interruptLineNum, device, (*statusReg), commandReg);
 }
 
 #define TERM_STATUS_READ   0x00000000
@@ -177,35 +183,18 @@ void genericDevHandler(int interruptLineNum){
 #define TERM_STATUS_WRITE   0x00000008
 #define TERM_COMMAND_WRITE   0x0000000C
 
-#define TERM_STATUS_READ   0x00000000
-#define TERM_COMMAND_READ   0x00000004
-#define TERM_STATUS_WRITE   0x00000008
-#define TERM_COMMAND_WRITE   0x0000000C
-
 void terminalHandler(){
-	memaddr * base;
-	base = (memaddr *) (TERM0ADDR);
-	*(base)=DEV_C_ACK;
 	// Uso la MACRO per ottenere la linea di interrupt
-	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
+	memaddr* intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
 	// Ottengo il device a priorità più alta 
 	int device = getHighestPriorityDev(intLine);
 	// Controllo il registro di stato del terminale per sapere se è stata effettuata una lettura o una scrittura 
-	memaddr  terminalRegister = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
-	//memaddr* statusRegRead    = (memaddr*) (terminalRegister + TERM_STATUS_READ);
-	//memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
-	memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
-	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
-
-	AAHERE();
-	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
-	struct tcb_t * w=thread_dequeue(&q->acc);
-	w->t_s.pc -= WORD_SIZE;
-	msgq_add(SSI,w,(uintptr_t)statusRegWrite);
-	thread_enqueue(w,&readyQueue);
-	BPHERE();
-
-	 /*
+	memaddr terminalRegister = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
+	memaddr* statusRegRead = (memaddr*) (terminalRegister + TERM_STATUS_READ);
+	memaddr* commandRegRead = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
+	memaddr* statusRegWrite = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
+	memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
+	 
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
 		ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
 	}
@@ -213,7 +202,4 @@ void terminalHandler(){
 	else if(((*statusRegRead) & 0x0F) == DEV_TRCV_S_CHARRECV){
 		ack(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
 	}
-	*/
-
-
 }
