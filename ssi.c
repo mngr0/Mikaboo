@@ -9,7 +9,7 @@ unsigned int* service;
 struct dev_acc_ctrl* q;
 
 //void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
-
+ 	
 //}
 
 void exterminate_thread(struct pcb_t * victim){
@@ -48,6 +48,7 @@ unsigned int ssi_terminate_thread(struct tcb_t* sender){
 	if(list_empty(&parent->p_threads)){
 		exterminate_proc(parent);
 	}
+	threadCount--;
 	return FALSE;
 }
 
@@ -56,6 +57,8 @@ void ssi_create_process(state_t* state,struct tcb_t* sender, uintptr_t* reply){
 	struct tcb_t* new_thread= thread_alloc(new_proc);
 	if(new_thread!=NULL){
 		saveStateIn(state,&new_thread->t_s);
+		threadCount++;
+		thread_enqueue(new_thread,&readyQueue);
 	}
 	*reply=(unsigned int)new_thread;
 }
@@ -64,6 +67,8 @@ void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply){
 	struct tcb_t* new= thread_alloc(sender->t_pcb);
 	if(new!=NULL){
 		saveStateIn(state,&new->t_s);
+		threadCount++;
+		thread_enqueue(new,&readyQueue);
 	}
 	*reply=(unsigned int)new;
 }
@@ -74,7 +79,6 @@ unsigned int specPrgMgr(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply
   //      terminate(sender);
         return FALSE;
     } else {
-    *reply=NULL;
 
         sender->t_pcb->prgMgr = mgr;
         *reply=(unsigned int) NULL;
@@ -89,7 +93,6 @@ unsigned int specTlbMgr(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply
     //    terminate(sender);
         return FALSE;
     } else {
-    *reply=NULL;
 
         sender->t_pcb->tlbMgr = mgr;
         *reply=(unsigned int) NULL;
@@ -125,37 +128,7 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	*(base) = *(msg_ssi+2);
 	return FALSE;
 }
-void ssi_create_thread(state_t* state,struct tcb_t* sender,uintptr_t * reply){
-    struct tcb_t* new=thread_alloc(sender->t_pcb);
-    if(new!=NULL)
-        saveStateIn(state,&(new->t_s));
-    *reply=(unsigned int)new;
-}
-void ssi_create_process(state_t* state,struct tcb_t* sender,uintptr_t * reply){
-    struct pcb_t* new_proc=proc_alloc(sender->t_pcb);
-    struct tcb_t* new_thread=thread_alloc(new_proc);
-    if(new_thread!=NULL)
-        saveStateIn(state,&(new_thread->t_s));
 
-    *reply=(unsigned int)new_thread;
-}
-unsigned int ssi_terminate_thread(struct tcb_t* sender){
-    struct pcb_t* parent=sender->t_pcb;
-    thread_outqueue(sender);
-    thread_free(sender);
-    if(proc_firstthread(parent)==NULL){
-        //ammazzo tutti i figli e i suoi thread
-        exterminate_proc(parent);
-        //suicidio eroico
-        proc_delete(parent);
-    }
-    threadCount--;
-    return FALSE;
-}
-unsigned int ssi_terminate_process(struct tcb_t * sender){
-    struct pcb_t* parent=sender->t_pcb;
-    exterminate_proc(parent);
-    return FALSE;
 
 
 unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){

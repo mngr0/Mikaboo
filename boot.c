@@ -48,7 +48,7 @@ void tist() {
 	while (1){
 		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (r<<8));
 		//memaddr *base = (memaddr *) (TERM0ADDR);
-		//*(base) = 2 | (((memaddr) 't') << 8);
+		// *(base) = 2 | (((memaddr) 't') << 8);
 	}
 }
 

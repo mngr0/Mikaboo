@@ -34,6 +34,7 @@ static void ttyprintstring(devaddr device, char* s) {
     for (; *s; s++) {
         status = do_terminal_io(device, DEV_TTRS_C_TRSMCHAR | (*s << 8));
         ACHERE();
+	/*
         switch (status & 0xff) {
             case DEV_S_READY:
             case DEV_TTRS_S_CHARTRSM:
@@ -41,6 +42,7 @@ static void ttyprintstring(devaddr device, char* s) {
             default:
                 return;
         }
+	*/
     }
 }
 
