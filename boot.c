@@ -58,8 +58,7 @@ char* or, *ur;
 void tust() {
 	ut= 'z';
 	ur="d";
-	memaddr * base;
-	base = (memaddr *) (TERM0ADDR);
+	memaddr * base = (memaddr *) (TERM0ADDR);
 	while (1){
 		msgsend(ttost, &ut);
 		ut--;
@@ -67,7 +66,8 @@ void tust() {
 			ut='z';
 		}
 		msgrecv(ttost, &ur);
-		*(base) = 2 | (((memaddr) *ur) << 8);
+		// *(base) = 2 | (((memaddr) *ur) << 8);
+		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*ur << 8));
 	}
 }
 
@@ -77,7 +77,8 @@ void tost() {
 	memaddr *base = (memaddr *) (TERM0ADDR);
 	while(1){
 		msgrecv(ttust, &or);
-		*(base) = 2 | (((memaddr) *or) << 8);
+		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*or << 8));
+		// *(base) = 2 | (((memaddr) *or) << 8);
 		msgsend(ttust, &ot);
 		ot++;
 		if(ot== 'Z'+1){
@@ -121,15 +122,13 @@ int main() {
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
 	((struct tcb_t* )SSI)->t_s.pc=(memaddr) ssi_entry;
 	//assegno valore di SP(CHECK)
-	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE ;
+	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE;
 
-
-
-
- /*
+ 
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
-	ttost=thread_alloc(starting_process);
+	struct pcb_t* ptost=proc_alloc(starting_process);
+	ttost=thread_alloc(ptost);
 	if (ttost==NULL){
 		PANIC();
 	}
@@ -141,11 +140,11 @@ int main() {
 	ttost->t_s.pc=(memaddr) tost;
 	//assegno valore di SP(CHECK)
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
-*/
 
+	struct pcb_t* ptust;
+	ptust=proc_alloc(starting_process);
 
-
-	ttust=thread_alloc(starting_process);
+	ttust=thread_alloc(ptust);
 	if (ttust==NULL){
 		PANIC();
 	}
@@ -157,11 +156,11 @@ int main() {
 	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
 	ttust->t_s.pc=(memaddr) test;
 	//assegno valore di SP(CHECK)
-	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE) ;
+	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE);
 
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
 	thread_enqueue(ttust,&readyQueue);
-//	thread_enqueue(ttost,&readyQueue);
+	//thread_enqueue(ttost,&readyQueue);
 
 	threadCount=2;
 

@@ -191,13 +191,13 @@ void terminalHandler(){
 	memaddr  terminalRegister = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
 	//memaddr* statusRegRead    = (memaddr*) (terminalRegister + TERM_STATUS_READ);
 	//memaddr* commandRegRead   = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
-	//memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
+	memaddr* statusRegWrite	  = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
 	//memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
 	AAHERE();
 	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( *intLine);
 	struct tcb_t * w=thread_dequeue(&q->acc);
 	w->t_s.pc -= WORD_SIZE;
-	msgq_add(SSI,w,(uintptr_t)NULL);
+	msgq_add(SSI,w,(uintptr_t)statusRegWrite);
 	thread_enqueue(w,&readyQueue);
 	BPHERE();
 	 /*

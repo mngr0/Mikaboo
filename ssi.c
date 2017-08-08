@@ -12,13 +12,18 @@ struct dev_acc_ctrl* q;
 
 //}
 
-
-
 void exterminate_thread(struct pcb_t * victim){
-	while (!list_empty(&victim->p_threads)){
-		thread_outqueue(proc_firstthread(victim));
-		thread_free(proc_firstthread(victim));
-	}
+    while (!list_empty(&victim->p_threads)){
+        if(out_thread(&readyQueue,proc_firstthread(victim))==NULL){
+          softBlockCount--;  
+        }
+        else{
+            thread_outqueue(proc_firstthread(victim));    
+        }
+        
+        thread_free(proc_firstthread(victim));
+        threadCount--;
+    }
 }
 
 void exterminate_proc(struct pcb_t * victim){
