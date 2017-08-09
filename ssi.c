@@ -7,7 +7,7 @@
 #include "exceptions.h"
 unsigned int* service;
 struct dev_acc_ctrl* q;
-
+struct tcb_t * Ashow;
 //void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
  	
 //}
@@ -65,6 +65,7 @@ void ssi_create_process(state_t* state,struct tcb_t* sender, uintptr_t* reply){
 
 void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply){
 	struct tcb_t* new= thread_alloc(sender->t_pcb);
+	Ashow=new;
 	if(new!=NULL){
 		saveStateIn(state,&new->t_s);
 		threadCount++;
@@ -174,7 +175,7 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 			break;	
 
 		case GET_CPUTIME:
-			return TRUE;
+			return FALSE;
 
 		case WAIT_FOR_CLOCK:
 			break;
@@ -184,30 +185,30 @@ unsigned int SSIdoRequest(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_
 			return ssi_do_io(msg_ssi,sender);
 			break;
 		case GET_PROCESSID :
-			*reply =(unsigned int) sender->t_pcb;
+			*reply =(unsigned int)( ((struct tcb_t*)(*msg_ssi+1))->t_pcb);
 			break;
 		case GET_MYTHREADID:
 			*reply =(unsigned int)  sender;
 			break;
 		case GET_PARENTPROCID: 
-			*reply =(unsigned int)  sender->t_pcb->p_parent;
+			*reply =(unsigned int)(   ((struct tcb_t*)(*msg_ssi+1)) ->t_pcb->p_parent);
 			break;
 
 	}
 	return TRUE;
 }
-
+	uintptr_t reply;
 void ssi_entry() {
 	struct tcb_t* sender;
 	unsigned int toBeSent;
 	uintptr_t msg;
-	uintptr_t reply;
+
 	for (;;) {
 		sender = msgrecv(NULL,&msg);
 
 		toBeSent = SSIdoRequest((uintptr_t*)msg, sender,&reply);
 		if (toBeSent)
-			msgsend((memaddr) sender, &reply);
+			msgsend((memaddr) sender, reply);
 
 	}
 }

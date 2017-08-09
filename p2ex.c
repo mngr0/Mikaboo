@@ -24,7 +24,13 @@
 
 #define QPAGE FRAME_SIZE
 
-static struct tcb_t* printid;
+struct tcb_t* printid;
+void AA(){}
+void AB(){}
+void AC(){}
+void AD(){}
+void AE(){}
+
 
 static void ttyprintstring(devaddr device, char* s) {
     uintptr_t status;
@@ -101,7 +107,9 @@ void test(void) {
     tmpstate.pc = (memaddr) tty0out_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid = create_thread(&tmpstate);
+    AA();
     tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
+    AB();
     testt = get_mythreadid();
 
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -190,9 +198,12 @@ void test(void) {
 
 #define MINLOOPTIME             10000
 #define LOOPNUM                 10000
+struct tcb_t* p1t;
 
+struct pcb_t* aa1;
+struct pcb_t* aa2;
 void p2(void) {
-    struct tcb_t* p1t;
+    
     uintptr_t value;
     cputime cpu_t1, cpu_t2;
     int i;
@@ -208,6 +219,8 @@ void p2(void) {
         panic("p2 recv: got the wrong value\n");
     if (p1t != testt)
         panic("p2 recv: got the wrong sender\n");
+    aa1=get_processid(p1t);
+    aa2=get_parentprocid(get_processid(get_mythreadid()));
     if (get_processid(p1t) != get_parentprocid(get_processid(get_mythreadid())))
         panic("p2 get_parentprocid get_processid error\n");
 

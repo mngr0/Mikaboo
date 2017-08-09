@@ -24,6 +24,7 @@
 #define TERM_COMMAND_READ   0x00000004
 #define TERM_STATUS_WRITE   0x00000008
 #define TERM_COMMAND_WRITE   0x0000000C
+#define COMMAND_REG_OFFSET 4
 
 void intHandler();
 void interruptVerhogen(int *sem, int statusRegister, memaddr* kernelStatusDev);

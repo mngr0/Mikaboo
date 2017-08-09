@@ -127,8 +127,8 @@ int main() {
  
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
-	struct pcb_t* ptost=proc_alloc(starting_process);
-	ttost=thread_alloc(ptost);
+//	struct pcb_t* ptost=proc_alloc(starting_process);
+/*	ttost=thread_alloc(starting_process);
 	if (ttost==NULL){
 		PANIC();
 	}
@@ -140,11 +140,10 @@ int main() {
 	ttost->t_s.pc=(memaddr) tost;
 	//assegno valore di SP(CHECK)
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
+*/
+	// struct pcb_t* ptust=proc_alloc(starting_process);
 
-	struct pcb_t* ptust;
-	ptust=proc_alloc(starting_process);
-
-	ttust=thread_alloc(ptust);
+	ttust=thread_alloc(starting_process);
 	if (ttust==NULL){
 		PANIC();
 	}

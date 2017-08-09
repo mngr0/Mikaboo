@@ -147,6 +147,9 @@ void ack(int intLine, int device, int statusReg, memaddr *commandReg){
 	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( intLine);
 	struct tcb_t * w=thread_dequeue(&q->acc);
 	w->t_s.pc -= WORD_SIZE;
+	currentThread->t_status=T_STATUS_READY;
+	currentThread->t_s.a1=0;
+	softBlockCount--;
 	msgq_add(SSI,w,(uintptr_t)statusReg);
 	thread_enqueue(w,&readyQueue);
 }
@@ -164,7 +167,7 @@ void lineOneTwoHandler(int interruptLineNum){
 	Handler per gli interrupt di un tipo di device generico (disk, tape, network, printer)
 	Manda un ACK al device ed esegue una V sul semaforo associato al device.
 */
-#define COMMAND_REG_OFFSET 4
+
 
 void genericDevHandler(int interruptLineNum){
 	// Uso la MACRO per ottenere la linea di interrupt 
@@ -178,7 +181,7 @@ void genericDevHandler(int interruptLineNum){
 	ack(interruptLineNum, device, (*statusReg), commandReg);
 }
 
-
+memaddr* intLine;
 void terminalHandler(){
 	// Uso la MACRO per ottenere la linea di interrupt
 	memaddr* intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);

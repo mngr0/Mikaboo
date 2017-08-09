@@ -36,7 +36,7 @@ struct pcb_t *proc_init(void){
 	INIT_LIST_HEAD(&root->p_children);
 	INIT_LIST_HEAD(&root->p_siblings);
 	INIT_LIST_HEAD(&free_proc);
-	int i;
+	int i; 
 	//inizializzazione tutti i processi
 	for(i=0;i<MAXPROC-1;i++){
 		struct pcb_t* proc=&store_p[i];
