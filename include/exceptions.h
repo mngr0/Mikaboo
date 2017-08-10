@@ -22,6 +22,8 @@
 void useExStVec(int type);
 void tlbHandler();
 void pgmHandler();
+void sysSendMsg();
+void sysRecvMsg();
 void sysBpHandler();
 void saveStateIn(state_t *from, state_t *to);
 

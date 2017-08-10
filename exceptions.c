@@ -56,6 +56,34 @@ void pgmHandler(){
 	*/
 }
 
+void sysSendMsg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
+	int msg_res;
+	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
+			
+		thread_outqueue(receiver);
+		thread_enqueue(receiver,&readyQueue);
+		* (unsigned int *)receiver->t_s.a3=msg;
+		receiver->t_s.a1=(unsigned int)sender;
+		receiver->t_s.pc += WORD_SIZE;
+		receiver->t_status=T_STATUS_READY;
+		if (sender!=SSI)
+			sender->t_s.a1=0;
+		softBlockCount--;
+	}else{
+		msg_res=msgq_add(sender,receiver,msg);
+		if(msg_res==-1){
+			if (sender!=SSI)
+				sender->t_s.a1=-1;
+		}
+	}
+
+}
+
+void sysRecvMsg(){}
+
+
+
+
 void sysBpHandler(){
 	saveStateIn(sysbp_old, &currentThread->t_s);
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
@@ -75,20 +103,7 @@ void sysBpHandler(){
 	                //a0 contiene la costante 1 (messaggio inviato)
 	                //a1 contiene l'indirizzo del thread destinatario
         			//a2 contiene il puntatore al messaggio
-					msg_res=msgq_add(currentThread,a1,a2);
-					if(msg_res==-1){
-						currentThread->t_s.a1=-1;
-					}
-					if(a1->t_status==T_STATUS_W4MSG){
-						if((a1->t_wait4sender==currentThread)||(a1->t_wait4sender==NULL)){
-							thread_outqueue(a1);
-							thread_enqueue(a1,&readyQueue);
-							a1->t_s.pc -= WORD_SIZE;
-							currentThread->t_status=T_STATUS_READY;
-							currentThread->t_s.a1=0;
-							softBlockCount--;
-						}
-					}
+					sysSendMsg(currentThread,a1,a2);
         			// Evito che rientri nel codice della syscall
 					currentThread->t_s.pc += WORD_SIZE;
 					LDST(&currentThread->t_s);
@@ -97,13 +112,14 @@ void sysBpHandler(){
 				case SYS_RECV:
 					//a0 contiene costante 2
 					//a1 contiene l'indirizzo del mittente(null==tutti)
-					//a2 contiene puntatore al buffer dove regitrare il messaggio(NULL== non registrare)
+					//a2 contiene puntatore al campo dove regitrare il messaggio(NULL== non registrare)
 					msg_res=msgq_get(&a1,currentThread,(uintptr_t *)a2);
 					//in a2 viene messo il puntatore alla struttura messaggio
 					if (msg_res==-1){
 						thread_outqueue(currentThread);
 						thread_enqueue(currentThread,&waitingQueue);
 						currentThread->t_wait4sender=a1;
+						currentThread->t_s.a3=a2;
 						currentThread->t_status=T_STATUS_W4MSG;
 						currentThread=NULL;
 						softBlockCount++;
@@ -112,7 +128,7 @@ void sysBpHandler(){
 						//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
 						currentThread->t_s.a3=a2;
 						// Evito che rientri nel codice della syscall
-						currentThread->t_s.a1=a1;
+						currentThread->t_s.a1=(unsigned int)a1;
 
 						currentThread->t_s.pc += WORD_SIZE;
 						LDST(&currentThread->t_s);

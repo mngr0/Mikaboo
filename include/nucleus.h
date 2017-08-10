@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "mikabooq.h"
-
+#include <arch.h>
 /* Syscall mnemonic values */
 #define SYS_SEND    1
 #define SYS_RECV    2
@@ -26,9 +26,13 @@
 
 #define TERM0ADDR               0x24C
 
+#define TERMINAL0ADDR 0x240
+
 typedef uintptr_t memaddr;
 typedef uintptr_t cputime;
 typedef uintptr_t devaddr;
+
+
 
 extern void* SSI;
 #define msgsend(dest, payload) (SYSCALL(SYS_SEND,(unsigned int) (dest),(unsigned int) (payload),0))

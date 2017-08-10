@@ -6,7 +6,7 @@
 #include "scheduler.h"
 #include "exceptions.h"
 unsigned int* service;
-struct dev_acc_ctrl* q;
+struct list_head* q;
 struct tcb_t * Ashow;
 //void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
  	
@@ -117,12 +117,13 @@ unsigned int specSysMgr(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* reply)
 unsigned int ssi_getcputime(){}
 
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
-	//controlla e scrive se necessario
-	//controllare -> device.state
-	//scrivere 
-	q=select_io_queue_from_status_addr( *(msg_ssi+1));
+	unsigned int devRegCommand= *(msg_ssi+1);
+	unsigned int deviceType=IL_TERMINAL;//TODO
+	unsigned int deviceNumber=0;
+	//q=select_io_queue(deviceType,deviceNumber);
+	q=&device_list[(deviceType-3)*DEV_PER_INT+deviceNumber];
 	thread_outqueue(sender);
-	thread_enqueue(sender , &q->acc );
+	thread_enqueue(sender , q );
 	//thread_enqueue(currentThread , &waitingQueue);
 	//stampare
 	memaddr *base = (memaddr *) ( *(msg_ssi+1));

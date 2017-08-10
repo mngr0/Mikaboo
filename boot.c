@@ -16,6 +16,18 @@
 /*******
 ******************************************************************************************/
 
+int devstart= DEV_REG_START;
+int devDISKstart =  (DEV_REG_START);
+int devTAPEstart =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT));
+int devETHERNETstart =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT*2));
+int devPRINTERstart =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT*3));
+int devPRINTERend =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT*4));
+int devTERMINALstart =  TERMINAL0ADDR;
+int devTERMINALend = (TERMINAL0ADDR + (DEV_REG_SIZE * DEV_PER_INT));
+
+
+
+
 void * SSI;
 struct tcb_t* ttust;
 struct tcb_t* ttost;
@@ -51,7 +63,8 @@ void tist() {
 		// *(base) = 2 | (((memaddr) 't') << 8);
 	}
 }
-
+void ADHERE(){}
+void AEHERE(){}
 char ot,ut;
 char* or, *ur;
 
@@ -65,9 +78,11 @@ void tust() {
 		if(ut== 'a'-1){
 			ut='z';
 		}
+
 		msgrecv(ttost, &ur);
-		// *(base) = 2 | (((memaddr) *ur) << 8);
-		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*ur << 8));
+		ADHERE();
+		 *(base) = 2 | (((memaddr) *ur) << 8);
+		//do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*ur << 8));
 	}
 }
 
@@ -77,8 +92,9 @@ void tost() {
 	memaddr *base = (memaddr *) (TERM0ADDR);
 	while(1){
 		msgrecv(ttust, &or);
-		do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*or << 8));
-		// *(base) = 2 | (((memaddr) *or) << 8);
+		AEHERE();
+		//do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*or << 8));
+		 *(base) = 2 | (((memaddr) *or) << 8);
 		msgsend(ttust, &ot);
 		ot++;
 		if(ot== 'Z'+1){
@@ -128,7 +144,8 @@ int main() {
 	//PROCESSO TEST
 //	struct pcb_t* test=proc_alloc(starting_process);
 //	struct pcb_t* ptost=proc_alloc(starting_process);
-/*	ttost=thread_alloc(starting_process);
+	/*
+	ttost=thread_alloc(starting_process);
 	if (ttost==NULL){
 		PANIC();
 	}
@@ -140,9 +157,9 @@ int main() {
 	ttost->t_s.pc=(memaddr) tost;
 	//assegno valore di SP(CHECK)
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
-*/
-	// struct pcb_t* ptust=proc_alloc(starting_process);
 
+	// struct pcb_t* ptust=proc_alloc(starting_process);
+*/
 	ttust=thread_alloc(starting_process);
 	if (ttust==NULL){
 		PANIC();
@@ -158,17 +175,11 @@ int main() {
 	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE);
 
 	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
-	thread_enqueue(ttust,&readyQueue);
 	//thread_enqueue(ttost,&readyQueue);
+	thread_enqueue(ttust,&readyQueue);
 
 	threadCount=2;
 
-/*
-	char* t= "n";
-    memaddr * base;
-    base = (memaddr *) (TERM0ADDR);
-    *(base) = 2 | (((memaddr) *t) << 8);
-*/
 	scheduler();
 	return 0;
 }

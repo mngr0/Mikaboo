@@ -34,5 +34,5 @@ void genericDevHandler(int interruptLineNum);
 void lineOneTwoHandler(int interruptLineNum);
 void timerHandler();
 void terminalHandler();
-struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr);
+struct list_head* select_io_queue(unsigned int deviceType, unsigned int deviceNumber);
 #endif

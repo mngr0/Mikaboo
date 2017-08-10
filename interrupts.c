@@ -40,6 +40,7 @@
 #include "ssi.h"
 #include "interrupts.h"
 #include "nucleus.h"
+
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
 /**
@@ -52,21 +53,11 @@ void APHERE(){}
 void BPHERE(){}
 void CPHERE(){}
 void AAHERE(){}
+int u=DEV_PER_INT;
+struct list_head* select_io_queue(unsigned int deviceType, unsigned int deviceNumber) {
+	return &device_list[deviceType*DEV_PER_INT+deviceNumber];
+	//return (struct list_head*) (&device_list + (deviceType*DEV_PER_INT+deviceNumber)*WORD_SIZE*2);
 
-struct dev_acc_ctrl* select_io_queue_from_status_addr(memaddr status_addr) {
-	int dev_number =0;// DEVICE_N_FROM_REGSTATUS(status_addr);
-	return &(terminal_queue[dev_number]);
-	if (IS_DISK_DEVICE(status_addr)) {
-		return &(disk_queue[dev_number]);
-	} else if (IS_TAPE_DEVICE(status_addr)) {
-		return &(tape_queue[dev_number]);
-	} else if (IS_ETHERNET_DEVICE(status_addr)) {
-		return &(ethernet_queue[dev_number]);
-	} else if (IS_PRINTER_DEVICE(status_addr)) {
-		return &(printer_queue[dev_number]);
-	} else {
-		return &(terminal_queue[dev_number]);
-	}
 }
 
 int cause;
@@ -125,7 +116,7 @@ void intHandler(){
 	l'indice del device attivo con priorità maggiore
 */
 int getHighestPriorityDev(memaddr* line){
-	int activeBit = 0x00000001;
+	unsigned int activeBit = 1;
 	int i;
 	/* Usando una maschera (activeBit) ad ogni iterazione isolo i singoli
 	bit dei device della linea. Quando ne trovo uno settato ne restituisco
@@ -138,20 +129,19 @@ int getHighestPriorityDev(memaddr* line){
 	}
 	return -1;
 }
+
+
 void timerHandler(){
 }
-void ack(int intLine, int device, int statusReg, memaddr *commandReg){
-	//memaddr *semDev 		 = getSemDev(intLine, device);
-	//memaddr *kernelStatusDev = getKernelStatusDev(intLine, device);
+
+
+struct list_head* q2;
+void ack(int deviceType, int deviceNumber, unsigned int status, memaddr *commandReg){
 	(*commandReg) = DEV_C_ACK;
-	struct dev_acc_ctrl* q=select_io_queue_from_status_addr( intLine);
-	struct tcb_t * w=thread_dequeue(&q->acc);
-	w->t_s.pc -= WORD_SIZE;
-	currentThread->t_status=T_STATUS_READY;
-	currentThread->t_s.a1=0;
-	softBlockCount--;
-	msgq_add(SSI,w,(uintptr_t)statusReg);
-	thread_enqueue(w,&readyQueue);
+	//q2=select_io_queue( deviceType,deviceNumber);
+	q2=&device_list[(deviceType-3)*DEV_PER_INT+deviceNumber];
+	struct tcb_t * w=thread_dequeue(q2);
+	sysSendMsg(SSI,w,status);
 }
 
 
@@ -160,7 +150,6 @@ void lineOneTwoHandler(int interruptLineNum){
 
 }
 
-
 /**
 	@param interruptLineNum: Numero della linea di interrupt
 
@@ -168,17 +157,16 @@ void lineOneTwoHandler(int interruptLineNum){
 	Manda un ACK al device ed esegue una V sul semaforo associato al device.
 */
 
-
-void genericDevHandler(int interruptLineNum){
+void genericDevHandler(int deviceType){
 	// Uso la MACRO per ottenere la linea di interrupt 
-	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(interruptLineNum);
-	// Ottengo il device a priorità più alta 
-	int device = getHighestPriorityDev(intLine);
-	// Ottengo il command register del device 
-	memaddr *commandReg = (memaddr*) (DEV_REG_ADDR(interruptLineNum, device) + COMMAND_REG_OFFSET);
+	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(deviceType);
+	// Ottengo il device a priorità più alta
+	int deviceNumber = getHighestPriorityDev(intLine);
+	// Ottengo il command register del device
+	memaddr *commandReg = (memaddr*) (DEV_REG_ADDR(deviceType, deviceNumber) + COMMAND_REG_OFFSET);
 	// Ottengo lo status register del device 
-	memaddr *statusReg 	= (memaddr*) (DEV_REG_ADDR(interruptLineNum, device));
-	ack(interruptLineNum, device, (*statusReg), commandReg);
+	memaddr *statusReg 	= (memaddr*) (DEV_REG_ADDR(deviceType, deviceNumber));
+	ack(deviceType, deviceNumber, (*statusReg), commandReg);
 }
 
 memaddr* intLine;
@@ -195,7 +183,8 @@ void terminalHandler(){
 	memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
 	 
 	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
-		ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
+		//ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
+		ack((IL_TERMINAL), device, ((*statusRegWrite)), commandRegWrite);
 	}
 
 	else if(((*statusRegRead) & 0x0F) == DEV_TRCV_S_CHARRECV){
