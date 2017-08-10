@@ -120,8 +120,8 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int devRegCommand= *(msg_ssi+1);
 	unsigned int deviceType=IL_TERMINAL;//TODO
 	unsigned int deviceNumber=0;
-	//q=select_io_queue(deviceType,deviceNumber);
-	q=&device_list[(deviceType-3)*DEV_PER_INT+deviceNumber];
+	q=select_io_queue(deviceType,deviceNumber);
+	//q=&device_list[(deviceType-3)*DEV_PER_INT+deviceNumber];
 	thread_outqueue(sender);
 	thread_enqueue(sender , q );
 	//thread_enqueue(currentThread , &waitingQueue);

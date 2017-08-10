@@ -49,15 +49,8 @@ state_t *int_old 	 = (state_t*) INT_OLDAREA;
 	come gestore degli interrupt.
 */
 
-void APHERE(){}
-void BPHERE(){}
-void CPHERE(){}
-void AAHERE(){}
-int u=DEV_PER_INT;
 struct list_head* select_io_queue(unsigned int deviceType, unsigned int deviceNumber) {
-	return &device_list[deviceType*DEV_PER_INT+deviceNumber];
-	//return (struct list_head*) (&device_list + (deviceType*DEV_PER_INT+deviceNumber)*WORD_SIZE*2);
-
+	return &device_list[(deviceType-DEV_IL_START)*DEV_PER_INT+deviceNumber];
 }
 
 int cause;
@@ -66,11 +59,10 @@ void intHandler(){
 	(*int_old).pc -= 4;
 
 	if(currentThread != NULL){
-		CPHERE();
 		qwe=1;
 		saveStateIn(int_old, &currentThread->t_s);
 	}
-		cause = getCAUSE();
+	cause = getCAUSE();
 
 	// Se la causa dell'interrupt è la linea 0 
 		if(CAUSE_IP_GET(cause, IL_IPI)){
@@ -135,11 +127,10 @@ void timerHandler(){
 }
 
 
-struct list_head* q2;
 void ack(int deviceType, int deviceNumber, unsigned int status, memaddr *commandReg){
 	(*commandReg) = DEV_C_ACK;
-	//q2=select_io_queue( deviceType,deviceNumber);
-	q2=&device_list[(deviceType-3)*DEV_PER_INT+deviceNumber];
+	struct list_head* q2=select_io_queue( deviceType,deviceNumber);
+	//q2=&device_list[(deviceType-DEV_IL_START)*DEV_PER_INT+deviceNumber];
 	struct tcb_t * w=thread_dequeue(q2);
 	sysSendMsg(SSI,w,status);
 }

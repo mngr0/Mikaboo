@@ -15,19 +15,6 @@
 /* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
 /*******
 ******************************************************************************************/
-
-int devstart= DEV_REG_START;
-int devDISKstart =  (DEV_REG_START);
-int devTAPEstart =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT));
-int devETHERNETstart =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT*2));
-int devPRINTERstart =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT*3));
-int devPRINTERend =  (DEV_REG_START + (DEV_REG_SIZE * DEV_PER_INT*4));
-int devTERMINALstart =  TERMINAL0ADDR;
-int devTERMINALend = (TERMINAL0ADDR + (DEV_REG_SIZE * DEV_PER_INT));
-
-
-
-
 void * SSI;
 struct tcb_t* ttust;
 struct tcb_t* ttost;
