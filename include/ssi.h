@@ -12,7 +12,7 @@ void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply);
 unsigned int ssi_prg_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply);
 unsigned int ssi_tlb_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply);
 unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* reply);
-unsigned int ssi_getcputime();
+void ssi_getcputime();
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender);
 unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply );
 unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t* reply);

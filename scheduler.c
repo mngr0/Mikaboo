@@ -8,7 +8,6 @@
 //non so perchè debbano stare qua sinceramente
 unsigned int slice_TOD = 0;
 unsigned int clock_TOD = 0;
-unsigned int process_TOD=0;
 
 //inizializzazione liste di attesa dei device
 void init_dev_ctrl(){

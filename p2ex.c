@@ -201,6 +201,7 @@ struct tcb_t* aa0;
 struct pcb_t* aa1;
 struct pct_t* aa15;
 struct pcb_t* aa2;
+unsigned int aa3,aa4;
 void p2(void) {
     
     uintptr_t value;
@@ -229,11 +230,11 @@ void p2(void) {
         panic("p2 get_parentprocid get_processid error\n");
 
     /* test: GET_CPUTIME */
-    cpu_t1 = getcputime();
+    aa3=cpu_t1 = getcputime();
 
     /* delay for several milliseconds */
     for (i = 1; i < LOOPNUM; i++);
-    cpu_t2 = getcputime();
+    aa4=cpu_t2 = getcputime();
 
     if ((cpu_t2 - cpu_t1) >= MINLOOPTIME)
         tty0print("p2 GET_CPUTIME sounds okay\n");

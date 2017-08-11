@@ -29,9 +29,7 @@ struct tcb_t {
 	struct list_head t_next; /* link the other elements of the list of threads in the same process */
 	struct list_head t_sched; /* link the other elements on the same scheduling list */
 	struct list_head t_msgq; /* list of pending messages for the current thread */
-	unsigned int start_t; // Inizio
-    unsigned int total_t; // tempo passato da inizio esecuzione
-	unsigned int exec_t; 
+	unsigned int cpu_time;
 };
 
 struct msg_t {

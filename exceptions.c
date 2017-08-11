@@ -143,6 +143,7 @@ void sys_bp_handler(){
 						current_thread->t_s.a3=a2;
 						current_thread->t_status=T_STATUS_W4MSG;
 						current_thread=NULL;
+						current_thread->cpu_time+=getTODLO()-process_TOD;
 						soft_block_count++;
 					}
 					//caso corretto

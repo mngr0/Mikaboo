@@ -110,9 +110,7 @@ void thread_init(void){
 		t->t_status=0;
 		t->t_pcb=NULL;
 		t->t_wait4sender=NULL;
-		t->start_t=0;
-		t->total_t=0;
-		t->exec_t=0;
+		t->cpu_time=0;
 	}
 }
 

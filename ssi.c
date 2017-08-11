@@ -110,7 +110,14 @@ unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* 
     }
 }
 
-unsigned int ssi_getcputime(){}
+void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
+	*reply=sender->cpu_time + (getTODLO()-process_TOD);
+}
+void ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
+	*reply=NULL;
+	thread_outqueue(sender);
+	thread_enqueue(sender,&wait_pseudo_clock_queue);
+}
 
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
@@ -174,10 +181,11 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 			break;	
 
 		case GET_CPUTIME:
-			*reply= sender->exec_t;
+			ssi_getcputime(sender,reply);
 			//return FALSE;
 
 		case WAIT_FOR_CLOCK:
+			ssi_waitforclock(sender,reply);
 			break;
 
 		case DO_IO:

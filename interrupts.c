@@ -21,9 +21,6 @@ void int_handler(){
 	int_old->pc -= 4;
 
 	if(current_thread != NULL){
-		unsigned int elapsed = getTODLO - current_thread->start_t;
-        current_thread->exec_t += elapsed - current_thread->total_t;
-        current_thread->total_t = elapsed;
 		save_state(int_old, &current_thread->t_s);
 	}
 	//guardo la causa dell' interrupt
@@ -39,7 +36,7 @@ void int_handler(){
 		} else
 	//  linea 2 timer 
 		if (CAUSE_IP_GET(cause, IL_TIMER)){
-			//timer_handler();
+			timer_handler();
 		} else
     // linea 3 disk 
 		if (CAUSE_IP_GET(cause, IL_DISK)){
@@ -85,6 +82,11 @@ int get_priority_dev(memaddr* line){
 
 
 void timer_handler(){
+	//if(isTimer(SCHED_PSEUDO_CLOCK))
+	while(!list_empty(&wait_pseudo_clock_queue)){
+		struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
+		thread_enqueue(thread,&ready_queue);
+	}
 }
 
 //manda un segnale di acknowledge al thread che è in attesa da un device
