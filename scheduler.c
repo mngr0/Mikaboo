@@ -88,6 +88,8 @@ void scheduler() {
         // Se non c'è nessun Thread in esecuzione ma c'e n'è almeno uno nella ready_queue allora  carico un thread
         if (current_thread == NULL) {
             current_thread = thread_dequeue(&ready_queue);
+            
+      process_TOD=getTODLO();
            // current_thread->elapsedTime = 0;
            // current_thread->startTime = GET_TODLOW;
           //  SET_IT(SCHED_TIME_SLICE);
@@ -110,7 +112,6 @@ void scheduler() {
 
 //        }
         //??? magic
-	  process_TOD=getTODLO();
         // carico lo stato del thread nel processore
         LDST(&(current_thread->t_s));
     }

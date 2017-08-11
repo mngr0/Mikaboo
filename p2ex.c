@@ -114,7 +114,7 @@ void test(void) {
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
     tty0print("critical section\n");
-/*
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -124,7 +124,7 @@ void test(void) {
     msgrecv(p2t, NULL);
 
     tty0print("p2 completed\n");
-*/
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -138,11 +138,14 @@ void test(void) {
     CSOUT;
     tmpstate.pc = (memaddr) p4;
     p4t = create_process(&tmpstate);
+    
     msgsend(p4t, NULL);
     msgrecv(p4t, NULL);
+    
     msgsend(p4t, tmpstate.sp);
+    BA();
     msgrecv(p4t, NULL);
-
+   BA();
     if (geterrno() == 0)
         panic("p1 wrong errno: recv from p4 should abort, p4 terminated\n");
     else {
@@ -297,17 +300,19 @@ void p4(void) {
 
     msgrecv(NULL, NULL);
     /* only the first incarnation reaches this point */
-
+    AA();
     STST(&p4childstate);
     CSIN();
     p4childstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     p4childstate.pc = (memaddr) p4;
-
+    AB();
     child = create_process(&p4childstate);
+    AE();
     msgsend(child, NULL);
+    AA();
     msgrecv(child, NULL);
-
+    AC();
     terminate_process();
 
     panic("p4 survived TERMINATE_PROCESS\n");

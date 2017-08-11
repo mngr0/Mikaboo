@@ -86,7 +86,6 @@ void timer_handler(){
 	//if(isTimer(SCHED_PSEUDO_CLOCK))
 	if(!list_empty(&wait_pseudo_clock_queue))
 		if (( getTODLO() - waiting_TOD)>100000){
-			BA();
 			while(!list_empty(&wait_pseudo_clock_queue)){
 				BB();
 				struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
