@@ -128,6 +128,7 @@ struct tcb_t *thread_alloc(struct pcb_t *process){
 		INIT_LIST_HEAD(&item_libero->t_sched);
 		INIT_LIST_HEAD(&item_libero->t_msgq);
 		item_libero->t_pcb=process;
+		item_libero->t_status= T_STATUS_READY;
 		list_add_tail(&item_libero->t_next,&process->p_threads);
 		return item_libero;
 	}
@@ -146,6 +147,7 @@ int thread_free(struct tcb_t *oldthread){
 		INIT_LIST_HEAD(&oldthread->t_next);
 		list_add(&oldthread->t_next,&free_thread);
 		oldthread->t_pcb=NULL;
+		oldthread->t_status= T_STATUS_NONE;
 		return 0;
 	}
 }

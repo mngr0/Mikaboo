@@ -3,6 +3,10 @@
 //valore massimo della richiesta
 #define MAX_REQUEST_VALUE 13
 //funzioni
+
+
+
+unsigned int err_numb;
 void exterminate_thread(struct pcb_t * victim);
 void exterminate_proc(struct pcb_t * victim);
 unsigned int ssi_terminate_process(struct tcb_t* sender);

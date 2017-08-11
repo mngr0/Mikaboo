@@ -8,17 +8,30 @@
 //}
 void CA(){}
 //uccide thread e modifica le varie variabili
+
+
+void check_death(struct tcb_t* t_victim){
+	struct tcb_t *t_temp=NULL;
+	for_each_thread_in_q(t_temp,&wait_queue){
+		if(t_temp->t_wait4sender==t_victim){
+			//sbloccare t_temp
+		}
+	}
+}
+
+
 void exterminate_thread(struct pcb_t * victim){
     while (!list_empty(&victim->p_threads)){
         if(out_thread(&ready_queue,proc_firstthread(victim))==NULL){
           soft_block_count--;  
         }
         else{
-            thread_outqueue(proc_firstthread(victim));    
+            thread_outqueue(proc_firstthread(victim));
         }
-        
-        thread_free(proc_firstthread(victim));
+        check_death(proc_firstthread(victim));
         thread_count--;
+        thread_free(proc_firstthread(victim));
+        
     }
 }
 //uccide un processo e tutta la sua stirpe
@@ -40,6 +53,7 @@ unsigned int ssi_terminate_process(struct tcb_t* sender){
 unsigned int ssi_terminate_thread(struct tcb_t* sender){
 	struct pcb_t* parent=sender->t_pcb;
 	thread_outqueue(sender);
+	check_death(sender);
 	thread_free(sender);
 	if(list_empty(&parent->p_threads)){
 		exterminate_proc(parent);
@@ -111,10 +125,10 @@ unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* 
 }
 
 void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
-	*reply=sender->cpu_time + (getTODLO()-process_TOD);
+	*reply=sender->cpu_time;
 }
 unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
-	*reply=NULL;
+	*reply=(unsigned int)NULL;
 	CA();
 	waiting_TOD=getTODLO();
 	thread_outqueue(sender);
