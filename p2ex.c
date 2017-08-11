@@ -100,22 +100,20 @@ uintptr_t p5sys = 0;
 uintptr_t p5send = 0;
 
 void test(void) {
-    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+    ttyprintstring(TERM0ADDR, "starting...\n");
     STST(&tmpstate);
     stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) tty0out_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid = create_thread(&tmpstate);
-    AA();
-    tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
-    AB();
+    tty0print("first msg\n");
     testt = get_mythreadid();
 
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
-    tty0print("NUCLEUS: critical section thread started\n");
+    tty0print("critical section\n");
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -199,8 +197,9 @@ void test(void) {
 #define MINLOOPTIME             10000
 #define LOOPNUM                 10000
 struct tcb_t* p1t;
-
+struct tcb_t* aa0;
 struct pcb_t* aa1;
+struct pct_t* aa15;
 struct pcb_t* aa2;
 void p2(void) {
     
@@ -219,17 +218,21 @@ void p2(void) {
         panic("p2 recv: got the wrong value\n");
     if (p1t != testt)
         panic("p2 recv: got the wrong sender\n");
+    aa0=get_mythreadid();
     aa1=get_processid(p1t);
-    aa2=get_parentprocid(get_processid(get_mythreadid()));
+
+    aa15=get_processid(aa0);
+
+    aa2=get_parentprocid(aa15);
+
     if (get_processid(p1t) != get_parentprocid(get_processid(get_mythreadid())))
         panic("p2 get_parentprocid get_processid error\n");
 
     /* test: GET_CPUTIME */
-
     cpu_t1 = getcputime();
+
     /* delay for several milliseconds */
     for (i = 1; i < LOOPNUM; i++);
-
     cpu_t2 = getcputime();
 
     if ((cpu_t2 - cpu_t1) >= MINLOOPTIME)

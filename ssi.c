@@ -136,6 +136,8 @@ unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){
 	return TRUE;
 
 }
+
+
 //funzione principale dell SSI, controlla che il servizio sia un valore corretto e chiama la funzione corrispondente
 unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t* reply) {
 	unsigned int* service=msg_ssi;
@@ -172,7 +174,8 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 			break;	
 
 		case GET_CPUTIME:
-			return FALSE;
+			*reply= sender->exec_t;
+			//return FALSE;
 
 		case WAIT_FOR_CLOCK:
 			break;
@@ -182,13 +185,13 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 			return ssi_do_io(msg_ssi,sender);
 			break;
 		case GET_PROCESSID :
-			*reply =(unsigned int)( ((struct tcb_t*)(*msg_ssi+1))->t_pcb);
+			*reply =(unsigned int)( ((struct tcb_t*)*(msg_ssi+1))->t_pcb);
 			break;
 		case GET_MYTHREADID:
 			*reply =(unsigned int)  sender;
 			break;
 		case GET_PARENTPROCID: 
-			*reply =(unsigned int)(   ((struct tcb_t*)(*msg_ssi+1)) ->t_pcb->p_parent);
+			*reply =(unsigned int) ( ((struct pcb_t*)*(msg_ssi+1))->p_parent );
 			break;
 
 	}

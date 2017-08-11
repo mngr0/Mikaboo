@@ -70,7 +70,8 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 		receiver->t_status=T_STATUS_READY;
 		//faccio in modo che non rientri nel codice della sys call
 		receiver->t_s.pc += WORD_SIZE;
-		//???
+		//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
+		//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
 		if (sender!=SSI)
 			sender->t_s.a1=0;
 		soft_block_count--;
@@ -78,9 +79,10 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	//altrimenti lo incodo normalmente
 	else{
 		msg_res=msgq_add(sender,receiver,msg);
-		//coda piena CREDO STO INIZIANDO AD AVERE SONNO
+		//coda piena, il messaggio non è stato inviato, la msgsend ritornerà -1 CHECK
 		if(msg_res==-1){
-			//errore
+			//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
+			//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
 			if (sender!=SSI)
 				sender->t_s.a1=-1;
 		}
@@ -147,7 +149,7 @@ void sys_bp_handler(){
 					else{
 						//metto in t_s.a3 il puntatore alla struct messaggio
 						current_thread->t_s.a3=a2;
-						//????
+						//la msgrecv ritornerà un puntatore al mittente
 						current_thread->t_s.a1=(unsigned int)a1;
 						// Evito che rientri nel codice della syscall
 						
@@ -186,7 +188,7 @@ void sys_bp_handler(){
 				    else {
 			            ssi_terminate_thread(current_thread);
 					}
-					
+
 				break; 
 			}
 		// Se invece è in user mode 

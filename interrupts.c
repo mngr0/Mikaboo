@@ -11,21 +11,22 @@
 //non so perchè debba stare qua
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
-
-//struttura di marco
+//calcola la giusta lista di attesa per il dato device, e ne restituisce un puntatore
 struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
 	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
 }
 //gestisco gli interrupt
 void int_handler(){
-	//int qwe=0; non penso serva, commento in caso rimuovere
-	(*int_old).pc -= 4;
+
+	int_old->pc -= 4;
 
 	if(current_thread != NULL){
-		//qwe=1;
+		unsigned int elapsed = getTODLO - current_thread->start_t;
+        current_thread->exec_t += elapsed - current_thread->total_t;
+        current_thread->total_t = elapsed;
 		save_state(int_old, &current_thread->t_s);
 	}
-	//guardo la motivazione
+	//guardo la causa dell' interrupt
 	int cause = getCAUSE();
 
 	// Se la causa dell'interrupt è la linea 0 

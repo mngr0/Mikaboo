@@ -10,7 +10,7 @@ unsigned int slice_TOD = 0;
 unsigned int clock_TOD = 0;
 unsigned int process_TOD=0;
 
-//funzione di Marco, commenta lui
+//inizializzazione liste di attesa dei device
 void init_dev_ctrl(){
     int i;
     for (i=0;i<DEV_USED_INTS*DEV_PER_INT;i++){
