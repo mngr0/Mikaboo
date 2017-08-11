@@ -6,7 +6,7 @@
 
 //void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
 //}
-
+void CA(){}
 //uccide thread e modifica le varie variabili
 void exterminate_thread(struct pcb_t * victim){
     while (!list_empty(&victim->p_threads)){
@@ -113,10 +113,13 @@ unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* 
 void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
 	*reply=sender->cpu_time + (getTODLO()-process_TOD);
 }
-void ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
+unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	*reply=NULL;
+	CA();
+	waiting_TOD=getTODLO();
 	thread_outqueue(sender);
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
+	return FALSE;
 }
 
 //gestisco l input output
@@ -182,10 +185,10 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 
 		case GET_CPUTIME:
 			ssi_getcputime(sender,reply);
-			//return FALSE;
+			break;
 
 		case WAIT_FOR_CLOCK:
-			ssi_waitforclock(sender,reply);
+			return ssi_waitforclock(sender,reply);
 			break;
 
 		case DO_IO:

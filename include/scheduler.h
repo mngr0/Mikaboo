@@ -12,6 +12,8 @@ int thread_count;
 int soft_block_count;
 struct tcb_t* current_thread;
 unsigned int process_TOD;
+unsigned int waiting_TOD;
+
 struct list_head ready_queue;
 struct list_head wait_queue;
 struct list_head wait_pseudo_clock_queue;

@@ -10,7 +10,8 @@
 #include "nucleus.h"
 //non so perchè debba stare qua
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
-
+void BA(){}
+void BB(){}
 //calcola la giusta lista di attesa per il dato device, e ne restituisce un puntatore
 struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
 	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
@@ -27,9 +28,9 @@ void int_handler(){
 	int cause = getCAUSE();
 
 	// Se la causa dell'interrupt è la linea 0 
-		if(CAUSE_IP_GET(cause, IL_IPI)){
-			line_handler(IL_IPI);
-		} else 
+	if(CAUSE_IP_GET(cause, IL_IPI)){
+		line_handler(IL_IPI);
+	} else 
 	// linea 1 
 		if(CAUSE_IP_GET(cause, IL_CPUTIMER)){
 			line_handler(IL_CPUTIMER);
@@ -83,10 +84,15 @@ int get_priority_dev(memaddr* line){
 
 void timer_handler(){
 	//if(isTimer(SCHED_PSEUDO_CLOCK))
-	while(!list_empty(&wait_pseudo_clock_queue)){
-		struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
-		thread_enqueue(thread,&ready_queue);
-	}
+	if(!list_empty(&wait_pseudo_clock_queue))
+		if (( getTODLO() - waiting_TOD)>100000){
+			BA();
+			while(!list_empty(&wait_pseudo_clock_queue)){
+				BB();
+				struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
+				thread_enqueue(thread,&ready_queue);
+			}
+		}
 }
 
 //manda un segnale di acknowledge al thread che è in attesa da un device

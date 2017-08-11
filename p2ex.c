@@ -114,7 +114,7 @@ void test(void) {
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
     tty0print("critical section\n");
-
+/*
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -124,7 +124,7 @@ void test(void) {
     msgrecv(p2t, NULL);
 
     tty0print("p2 completed\n");
-
+*/
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -133,7 +133,6 @@ void test(void) {
     msgrecv(p3t, NULL);
 
     tty0print("p3 completed\n");
-
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -251,11 +250,11 @@ void p2(void) {
 
 #define PSEUDOCLOCK 100000
 #define NWAIT 10
-
+cputime time1, time2;
 void p3(void) {
     tty0print("p3 started\n");
 
-    cputime time1, time2;
+    
     int i;
     time1 = getTODLO();
     for (i = 0; i < NWAIT; i++) {

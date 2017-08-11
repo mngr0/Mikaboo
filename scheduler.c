@@ -110,7 +110,7 @@ void scheduler() {
 
 //        }
         //??? magic
-	   process_TOD=getTODLO();
+	  process_TOD=getTODLO();
         // carico lo stato del thread nel processore
         LDST(&(current_thread->t_s));
     }
