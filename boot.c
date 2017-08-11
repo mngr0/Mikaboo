@@ -1,5 +1,3 @@
-//Include
-//test
 #include "const.h"
 #include "nucleus.h"
 #include "arch.h"
@@ -11,14 +9,13 @@
 #include "interrupts.h"
 #include "p2test.h"
 
-/*************************************************************************************************/
-/* Creazione delle quattro nuove aree nel frame riservato alla ROM  e delle variabili del nucleo */
-/*******
-******************************************************************************************/
 void * SSI;
-struct tcb_t* ttust;
+struct tcb_t* thread_test;
+
 struct tcb_t* ttost;
 struct tcb_t* ttist;
+
+//inizializza le aree di memoria (assioma)
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
 	/* Memorizza il contenuto attuale del processore in newArea */
@@ -35,13 +32,7 @@ void initArea(memaddr area, memaddr handler){
 
 
 
-/*
-void sysBpHandler(){
-	memaddr * base = (memaddr *) (TERM0ADDR);
-	char l='0'+a0;
-	*(base + 3) = 2 | (((memaddr) l) << 8);
-}
-*/
+
 void tist() {
 	char r='e';
 	while (1){
@@ -78,11 +69,11 @@ void tost() {
 	or="P";
 	memaddr *base = (memaddr *) (TERM0ADDR);
 	while(1){
-		msgrecv(ttust, &or);
+		msgrecv(thread_test, &or);
 		AEHERE();
 		//do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*or << 8));
 		 *(base) = 2 | (((memaddr) *or) << 8);
-		msgsend(ttust, &ot);
+		msgsend(thread_test, &ot);
 		ot++;
 		if(ot== 'Z'+1){
 			ot='A';
@@ -90,23 +81,25 @@ void tost() {
 	}
 }
 
-extern void test();
+
+//Boot del nostro programma
 int main() {
 	init_dev_ctrl();
-	currentThread=NULL;
-	INIT_LIST_HEAD(&readyQueue);
-	INIT_LIST_HEAD(&waitingQueue);
-	INIT_LIST_HEAD(&waitForPseudoClockQueue);
+	current_thread=NULL;
+	//Inizializzo liste 
+	INIT_LIST_HEAD(&ready_queue);
+	INIT_LIST_HEAD(&wait_queue);
+	INIT_LIST_HEAD(&wait_pseudo_clock_queue);
     /* Settaggio delle quattro aree, ogni area:
-       - imposta il PC e il registro t9 con l'address della funzione nel nucleo che deve gestire le eccezioni di questo tipo
-       - imposta il $SP al RAMTOP
+       - imposta il pc con la funzione nel nucleo che deve gestire le eccezioni di questo tipo
+       - imposta il sp al RAMTOP
       - imposta il registro di stato a mascherare tutti gli interrupts, disattivare la virtual memory, e passa in kernelmode.*/
 
-	initArea(INT_NEWAREA, (memaddr) intHandler);
-	initArea(TLB_NEWAREA, (memaddr) tlbHandler);
-	initArea(PGMTRAP_NEWAREA, (memaddr) pgmHandler);
-	initArea(SYSBK_NEWAREA, (memaddr) sysBpHandler);
-    /* Inizializzazione delle strutture dati */
+	initArea(INT_NEWAREA, (memaddr) int_handler);
+	initArea(TLB_NEWAREA, (memaddr) tlb_handler);
+	initArea(PGMTRAP_NEWAREA, (memaddr) pgm_handler);
+	initArea(SYSBK_NEWAREA, (memaddr) sys_bp_handler);
+    // Inizializzazione della fase 1
 	struct pcb_t *starting_process=proc_init();
 	thread_init();
 	msgq_init();
@@ -118,17 +111,17 @@ int main() {
 		PANIC();
 	}
 
-	//abilita interrupt e kernel mode (CHECK)
+	//abilita interrupt e kernel mode
 	((struct tcb_t* )SSI)->t_s.cpsr=STATUS_ALL_INT_ENABLE((((struct tcb_t* )SSI)->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
 	((struct tcb_t* )SSI)->t_s.CP15_Control =CP15_DISABLE_VM (((struct tcb_t* )SSI)->t_s.CP15_Control);
-	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
+	//assegno valore di pc
 	((struct tcb_t* )SSI)->t_s.pc=(memaddr) ssi_entry;
-	//assegno valore di SP(CHECK)
+	//assegno valore di sp
 	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE;
 
  
-	//PROCESSO TEST
+	//PROCESSO TEST SPERO DI NON RIAVVIARLO MAI
 //	struct pcb_t* test=proc_alloc(starting_process);
 //	struct pcb_t* ptost=proc_alloc(starting_process);
 	/*
@@ -144,29 +137,30 @@ int main() {
 	ttost->t_s.pc=(memaddr) tost;
 	//assegno valore di SP(CHECK)
 	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
-
-	// struct pcb_t* ptust=proc_alloc(starting_process);
 */
-	ttust=thread_alloc(starting_process);
-	if (ttust==NULL){
+	//creo processo figlio del ssi, il mio odiato test
+	 struct pcb_t* proc_test=proc_alloc(starting_process);
+
+	thread_test=thread_alloc(proc_test);
+	if (thread_test==NULL){
 		PANIC();
 	}
 
 	//abilita interrupt e kernel mode (CHECK)u
-	ttust->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttust->t_s.cpsr)|STATUS_SYS_MODE);
+	thread_test->t_s.cpsr=STATUS_ALL_INT_ENABLE((thread_test->t_s.cpsr)|STATUS_SYS_MODE);
 	//disabilita memoria virtuale
-	ttust->t_s.CP15_Control =CP15_DISABLE_VM (ttust->t_s.CP15_Control);
-	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttust->t_s.pc=(memaddr) test;
-	//assegno valore di SP(CHECK)
-	ttust->t_s.sp=RAM_TOP - (3*FRAME_SIZE);
+	thread_test->t_s.CP15_Control =CP15_DISABLE_VM (thread_test->t_s.CP15_Control);
+	//assegno valore di pc 
+	thread_test->t_s.pc=(memaddr) test;
+	//assegno valore di SP
+	thread_test->t_s.sp=RAM_TOP - (2*FRAME_SIZE);
 
-	thread_enqueue((struct tcb_t* )SSI,&readyQueue);
-	//thread_enqueue(ttost,&readyQueue);
-	thread_enqueue(ttust,&readyQueue);
-
-	threadCount=2;
-
+	thread_enqueue((struct tcb_t* )SSI,&ready_queue);
+	//thread_enqueue(ttost,&ready_queue);
+	thread_enqueue(thread_test,&ready_queue);
+	//aggiorno il numero di thread eseguiti
+	thread_count=2;
+	//chiamo lo scheduler.Il controllo non tornerà mai qua.
 	scheduler();
 	return 0;
 }

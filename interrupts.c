@@ -1,113 +1,73 @@
-	 /*******************************************************************************
-  * Copyright 2014, Devid Farinelli, Erik Minarini, Alberto Nicoletti          	*
-  * This file is part of kaya2014.       									    *
-  *																				*
-  * kaya2014 is free software: you can redistribute it and/or modify			*
-  * it under the terms of the GNU General Public License as published by		*
-  * the Free Software Foundation, either version 3 of the License, org          *
-  * (at your option) any later version.											*
-  *																				*
-  * kaya2014 is distributed in the hope that it will be useful,					*
-  * but WITHOUT ANY WARRANTY; without even the implied warranty of				*
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 				*
-  * GNU General Public License for more details.								*
-  *																				*
-  * You should have received a copy of the GNU General Public licenses 			*
-  * along with kaya2014.  If not, see <http://www.gnu.org/licenses/>.			*
-  ******************************************************************************/
-
-/******************************** interrupts.c **********************************
- *
- *	Questo modulo implementa la gestione delle eccezioni interrupt.
- *	Il modulo gestirà  tutti gli interrupt dei device, dell' Interval
- *  Timer e dello Pseudo Clock, convertendo gli interrupt dei device
- *	in V sui semafori appropriati.
- *
- */
-
 #include <libuarm.h>
 #include <uARMconst.h>
 #include <arch.h>
-
-
 #include "const.h"
-
-
 #include "mikabooq.h"
-
 #include "scheduler.h"
 #include "exceptions.h"
 #include "ssi.h"
 #include "interrupts.h"
 #include "nucleus.h"
-
+//non so perchè debba stare qua
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
-/**
-	Handler per gli interrupt.
-	L'indirizzo di questa funzione è salvato nella ROM Reserved Frame
-	come gestore degli interrupt.
-*/
 
-struct list_head* select_io_queue(unsigned int deviceType, unsigned int deviceNumber) {
-	return &device_list[(deviceType-DEV_IL_START)*DEV_PER_INT+deviceNumber];
+//struttura di marco
+struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
+	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
 }
-
-int cause;
-void intHandler(){
-	int qwe=0;
+//gestisco gli interrupt
+void int_handler(){
+	//int qwe=0; non penso serva, commento in caso rimuovere
 	(*int_old).pc -= 4;
 
-	if(currentThread != NULL){
-		qwe=1;
-		saveStateIn(int_old, &currentThread->t_s);
+	if(current_thread != NULL){
+		//qwe=1;
+		save_state(int_old, &current_thread->t_s);
 	}
-	cause = getCAUSE();
+	//guardo la motivazione
+	int cause = getCAUSE();
 
 	// Se la causa dell'interrupt è la linea 0 
 		if(CAUSE_IP_GET(cause, IL_IPI)){
-			lineOneTwoHandler(IL_IPI);
+			line_handler(IL_IPI);
 		} else 
 	// linea 1 
 		if(CAUSE_IP_GET(cause, IL_CPUTIMER)){
-			lineOneTwoHandler(IL_CPUTIMER);
+			line_handler(IL_CPUTIMER);
 		} else
 	//  linea 2 timer 
 		if (CAUSE_IP_GET(cause, IL_TIMER)){
-			//timerHandler();
+			//timer_handler();
 		} else
     // linea 3 disk 
 		if (CAUSE_IP_GET(cause, IL_DISK)){
-			genericDevHandler(IL_DISK);
+			device_handler(IL_DISK);
 		} else
     // linea 4 tape
 		if (CAUSE_IP_GET(cause, IL_TAPE)){
-			genericDevHandler(IL_TAPE);
+			device_handler(IL_TAPE);
 		} else
     // linea 5 network 
 		if (CAUSE_IP_GET(cause, IL_ETHERNET)){
-			genericDevHandler(IL_ETHERNET);
+			device_handler(IL_ETHERNET);
 		} else
     // linea 6 printer
 		if (CAUSE_IP_GET(cause, INT_PRINTER)){
-			genericDevHandler(IL_PRINTER);
+			device_handler(IL_PRINTER);
 		} else
     // linea 7 terminal 
 		if (CAUSE_IP_GET(cause, INT_TERMINAL)){
-			terminalHandler();
+			terminal_handler();
 		}
 
 	scheduler();
 }
 
 
-/**
-	@param line: Linea di Interrupt di un tipo di device
-	
-	Data la maschera di bit di una linea di interrupt restituisce 
-	l'indice del device attivo con priorità maggiore
-*/
-int getHighestPriorityDev(memaddr* line){
+
+//restituisce l'indice del device attivo con priorità maggiore
+int get_priority_dev(memaddr* line){
 	unsigned int activeBit = 1;
 	int i;
 	/* Usando una maschera (activeBit) ad ogni iterazione isolo i singoli
@@ -123,62 +83,55 @@ int getHighestPriorityDev(memaddr* line){
 }
 
 
-void timerHandler(){
+void timer_handler(){
+}
+
+//manda un segnale di acknowledge al thread che è in attesa da un device
+void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
+	(*command_reg) = DEV_C_ACK;
+	struct list_head* dev=select_io_queue( dev_type,dev_numb);
+	//q2=&device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
+	struct tcb_t * thread_dev=thread_dequeue(dev);
+	sys_send_msg(SSI,thread_dev,status);
 }
 
 
-void ack(int deviceType, int deviceNumber, unsigned int status, memaddr *commandReg){
-	(*commandReg) = DEV_C_ACK;
-	struct list_head* q2=select_io_queue( deviceType,deviceNumber);
-	//q2=&device_list[(deviceType-DEV_IL_START)*DEV_PER_INT+deviceNumber];
-	struct tcb_t * w=thread_dequeue(q2);
-	sysSendMsg(SSI,w,status);
-}
 
-
-
-void lineOneTwoHandler(int interruptLineNum){
+void line_handler(int interruptLineNum){
 
 }
 
-/**
-	@param interruptLineNum: Numero della linea di interrupt
-
-	Handler per gli interrupt di un tipo di device generico (disk, tape, network, printer)
-	Manda un ACK al device ed esegue una V sul semaforo associato al device.
-*/
-
-void genericDevHandler(int deviceType){
+//gestisce un device generico (no terminale)
+void device_handler(int dev_type){
 	// Uso la MACRO per ottenere la linea di interrupt 
-	memaddr *intLine = (memaddr*) CDEV_BITMAP_ADDR(deviceType);
+	memaddr *interrupt_line = (memaddr*) CDEV_BITMAP_ADDR(dev_type);
 	// Ottengo il device a priorità più alta
-	int deviceNumber = getHighestPriorityDev(intLine);
+	int dev_numb = get_priority_dev(interrupt_line);
 	// Ottengo il command register del device
-	memaddr *commandReg = (memaddr*) (DEV_REG_ADDR(deviceType, deviceNumber) + COMMAND_REG_OFFSET);
+	memaddr *command_reg = (memaddr*) (DEV_REG_ADDR(dev_type, dev_numb) + COMMAND_REG_OFFSET);
 	// Ottengo lo status register del device 
-	memaddr *statusReg 	= (memaddr*) (DEV_REG_ADDR(deviceType, deviceNumber));
-	ack(deviceType, deviceNumber, (*statusReg), commandReg);
+	memaddr *status_reg 	= (memaddr*) (DEV_REG_ADDR(dev_type, dev_numb));
+	//mando un segnale di ack al thread in attesa
+	ack(dev_type, dev_numb, (*status_reg), command_reg);
 }
-
-memaddr* intLine;
-void terminalHandler(){
+//gestisce il terminale
+void terminal_handler(){
 	// Uso la MACRO per ottenere la linea di interrupt
-	memaddr* intLine = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
+	memaddr* interrupt_line = (memaddr*) CDEV_BITMAP_ADDR(IL_TERMINAL);
 	// Ottengo il device a priorità più alta 
-	int device = getHighestPriorityDev(intLine);
+	int device = get_priority_dev(interrupt_line);
 	// Controllo il registro di stato del terminale per sapere se è stata effettuata una lettura o una scrittura 
-	memaddr terminalRegister = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
-	memaddr* statusRegRead = (memaddr*) (terminalRegister + TERM_STATUS_READ);
-	memaddr* commandRegRead = (memaddr*) (terminalRegister + TERM_COMMAND_READ);
-	memaddr* statusRegWrite = (memaddr*) (terminalRegister + TERM_STATUS_WRITE);
-	memaddr* commandRegWrite  = (memaddr*) (terminalRegister + TERM_COMMAND_WRITE);
-	 
-	if(((*statusRegWrite) & 0x0F) == DEV_TTRS_S_CHARTRSM){
-		//ack((IL_TERMINAL + 1), device, ((*statusRegWrite)), commandRegWrite);
-		ack((IL_TERMINAL), device, ((*statusRegWrite)), commandRegWrite);
+	memaddr term_reg = (memaddr)  (DEV_REG_ADDR(IL_TERMINAL, device));
+	memaddr* status_reg_read = (memaddr*) (term_reg + TERM_STATUS_READ);
+	memaddr* command_reg_read = (memaddr*) (term_reg + TERM_COMMAND_READ);
+	memaddr* status_reg_write = (memaddr*) (term_reg + TERM_STATUS_WRITE);
+	memaddr* command_reg_write  = (memaddr*) (term_reg + TERM_COMMAND_WRITE);
+	 //è stata fatta una scrittura
+	if(((*status_reg_write) & 0x0F) == DEV_TTRS_S_CHARTRSM){
+		ack((IL_TERMINAL), device, ((*status_reg_write)), command_reg_write);
 	}
-
-	else if(((*statusRegRead) & 0x0F) == DEV_TRCV_S_CHARRECV){
-		ack(IL_TERMINAL, device, ((*statusRegRead)), commandRegRead);
+	//è stata fatta una lettura
+	else if(((*status_reg_read) & 0x0F) == DEV_TRCV_S_CHARRECV){
+		ack(IL_TERMINAL, device, ((*status_reg_read)), command_reg_read);
 	}
 }

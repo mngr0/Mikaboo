@@ -6,12 +6,13 @@
 #include "mikabooq.h"
 #include "scheduler.h"
 #include "nucleus.h"
+#include "exceptions.h"
 
-state_t *tlb_old 	 = (state_t*) TLB_OLDAREA;
+state_t *tlb_old   = (state_t*) TLB_OLDAREA;
 state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
-state_t *sysbp_old 	 = (state_t*) SYSBK_OLDAREA;
+state_t *sysbp_old   = (state_t*) SYSBK_OLDAREA;
 
-void saveStateIn(state_t *from, state_t *to){
+void save_state(state_t *from, state_t *to){
 	to->a1                  = from->a1;
 	to->a2                  = from->a2;
 	to->a3                  = from->a3;
@@ -36,42 +37,50 @@ void saveStateIn(state_t *from, state_t *to){
 	to->TOD_Low             = from->TOD_Low;
 }
 
-void tlbHandler(){
+void tlb_handler(){
     // Se un processo è eseguito dal processore salvo lo stato nella tlb_oldarea 
 	/*
 	if(currentProcess != NULL){
-		saveStateIn(tlb_old, &currentProcess->p_s);
+		save_state(tlb_old, &currentProcess->p_s);
 	}
 
 	useExStVec(SPECTLB);
 	*/
 }
 
-void pgmHandler(){
+void pgm_handler(){
     //se un processo è eseguito dal processore salvo lo stato nella pgmtrap_oldarea*/
 	/* if(currentProcess != NULL){
-		saveStateIn(pgmtrap_old, &currentProcess->sp);
+		save_state(pgmtrap_old, &currentProcess->sp);
 	}
 	useExStVec(SPECPGMT);
 	*/
 }
 
-void sysSendMsg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
+void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	int msg_res;
+	//se il destinatario è in attesa proprio di questo messaggio
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
-			
+		//lo sveglio
 		thread_outqueue(receiver);
-		thread_enqueue(receiver,&readyQueue);
+		thread_enqueue(receiver,&ready_queue);
+		//setto i vari campi
 		* (unsigned int *)receiver->t_s.a3=msg;
 		receiver->t_s.a1=(unsigned int)sender;
-		receiver->t_s.pc += WORD_SIZE;
 		receiver->t_status=T_STATUS_READY;
+		//faccio in modo che non rientri nel codice della sys call
+		receiver->t_s.pc += WORD_SIZE;
+		//???
 		if (sender!=SSI)
 			sender->t_s.a1=0;
-		softBlockCount--;
-	}else{
+		soft_block_count--;
+	}
+	//altrimenti lo incodo normalmente
+	else{
 		msg_res=msgq_add(sender,receiver,msg);
+		//coda piena CREDO STO INIZIANDO AD AVERE SONNO
 		if(msg_res==-1){
+			//errore
 			if (sender!=SSI)
 				sender->t_s.a1=-1;
 		}
@@ -79,130 +88,141 @@ void sysSendMsg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 
 }
 
-void sysRecvMsg(){}
+void sys_recv_msg(){}
 
 
 
-
-void sysBpHandler(){
-	saveStateIn(sysbp_old, &currentThread->t_s);
+//gestione system calle breaking point
+void sys_bp_handler(){
+	//salvo lo stato del thread corrente
+	save_state(sysbp_old, &current_thread->t_s);
+	//controllo perchè è stato chiamato il sys_bp_handler
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
+
 	unsigned int a0 = sysbp_old->a1;
 	struct tcb_t * a1 =(struct tcb_t *) sysbp_old->a2;
 	uintptr_t a2 = sysbp_old->a3;
+	//salvo messaggio
 	int msg_res;
 	// Se l'eccezione è di tipo System call 
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
-		if( (currentThread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
+		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
 			switch(a0){
+				//errore
 				case 0:
 					PANIC();
-				//SISTEMARE CON I CASI LA SYS SEND
+				//devo inviare un messaggio
 				case SYS_SEND:
 	                //a0 contiene la costante 1 (messaggio inviato)
 	                //a1 contiene l'indirizzo del thread destinatario
         			//a2 contiene il puntatore al messaggio
-					sysSendMsg(currentThread,a1,a2);
-        			// Evito che rientri nel codice della syscall
-					currentThread->t_s.pc += WORD_SIZE;
-					LDST(&currentThread->t_s);
-				break;
 
+					//faccio la send
+					sys_send_msg(current_thread,a1,a2);
+					// Evito che rientri nel codice della syscall
+					current_thread->t_s.pc += WORD_SIZE;
+					LDST(&current_thread->t_s);
+				break;
+				//devo ricevere un messaggio
 				case SYS_RECV:
 					//a0 contiene costante 2
 					//a1 contiene l'indirizzo del mittente(null==tutti)
 					//a2 contiene puntatore al campo dove regitrare il messaggio(NULL== non registrare)
-					msg_res=msgq_get(&a1,currentThread,(uintptr_t *)a2);
-					//in a2 viene messo il puntatore alla struttura messaggio
+					msg_res=msgq_get(&a1,current_thread,(uintptr_t *)a2);
+					//non c'è ancora il messaggio
 					if (msg_res==-1){
-						thread_outqueue(currentThread);
-						thread_enqueue(currentThread,&waitingQueue);
-						currentThread->t_wait4sender=a1;
-						currentThread->t_s.a3=a2;
-						currentThread->t_status=T_STATUS_W4MSG;
-						currentThread=NULL;
-						softBlockCount++;
+						//non è più il thread corrente
+						thread_outqueue(current_thread);
+						//perchè va in attessa
+						thread_enqueue(current_thread,&wait_queue);
+						//sistemo i vari campi
+						current_thread->t_wait4sender=a1;
+						current_thread->t_s.a3=a2;
+						current_thread->t_status=T_STATUS_W4MSG;
+						current_thread=NULL;
+						soft_block_count++;
 					}
+					//caso corretto
 					else{
-						//con l- istruzione sotto metto in t_s.a3 il puntatore alla struct messaggio
-						currentThread->t_s.a3=a2;
+						//metto in t_s.a3 il puntatore alla struct messaggio
+						current_thread->t_s.a3=a2;
+						//????
+						current_thread->t_s.a1=(unsigned int)a1;
 						// Evito che rientri nel codice della syscall
-						currentThread->t_s.a1=(unsigned int)a1;
-
-						currentThread->t_s.pc += WORD_SIZE;
-						LDST(&currentThread->t_s);
+						
+						current_thread->t_s.pc += WORD_SIZE;
+						//carico il thread
+						LDST(&current_thread->t_s);
 					}
-				break;
-
+					break;
 				default:
 					//check TUTTI I PUNTATORI
-				    if(currentThread->t_pcb->sysMgr != NULL) {
-					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->sysMgr,(uintptr_t)&(currentThread->t_s.CP15_Cause));
-					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-					if (out_thread(&waitingQueue,currentThread->t_pcb->sysMgr)) {
-					//	thread_outqueue(currentThread->t_pcb->sysMgr);
-                       				 thread_enqueue(currentThread->t_pcb->sysMgr,&readyQueue);
-                       				 softBlockCount--;
-                   			}
-					thread_outqueue(currentThread);
-					thread_enqueue(currentThread,&waitingQueue);
-               			    }
-				    else if(currentThread->t_pcb->prgMgr != NULL) {
-					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->prgMgr,(unsigned int)&(currentThread->t_s.CP15_Cause));
-					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-					if (out_thread(&waitingQueue,currentThread->t_pcb->prgMgr)) {
-						thread_outqueue(currentThread->t_pcb->prgMgr);
-                       				 thread_enqueue(currentThread->t_pcb->prgMgr,&readyQueue);
-                       				 softBlockCount--;
-                   			}
-					thread_outqueue(currentThread);
-					thread_enqueue(currentThread,&waitingQueue);
-               			    }
-					/*
+				    //se hanno un sysmgr adeguato
+				    if(current_thread->t_pcb->sysMgr != NULL) {
+						msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+						//sveglio il manager
+						if (out_thread(&wait_queue,current_thread->t_pcb->sysMgr)!=NULL) {
+					   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
+                       				 soft_block_count--;
+                   		}
+                   		//blocco il processo corrente
+						thread_outqueue(current_thread);
+						thread_enqueue(current_thread,&wait_queue);
+               		  }
+               		//se  hanno un program pgr adeguato
+				    else if(current_thread->t_pcb->prgMgr != NULL) {
+						msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
+						//sveglio il manager
+						if (out_thread(&wait_queue,current_thread->t_pcb->prgMgr)!=NULL) {
+							thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
+                       		soft_block_count--;
+                   		}
+                   		//blocco il processo corrente
+						thread_outqueue(current_thread);
+						thread_enqueue(current_thread,&wait_queue);
+               		}
+               		//lo uccido
 				    else {
-			            terminate(currentThread);
+			            ssi_terminate_thread(current_thread);
 					}
-					*/
+					
 				break; 
 			}
 		// Se invece è in user mode 
-		} else if((currentThread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
-			    if(currentThread->t_pcb->sysMgr != NULL) {
-					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->sysMgr,(uintptr_t)&(currentThread->t_s.CP15_Cause));
-					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-					if (out_thread(&waitingQueue,currentThread->t_pcb->sysMgr)) {
-						thread_outqueue(currentThread->t_pcb->sysMgr);
-                       				 thread_enqueue(currentThread->t_pcb->sysMgr,&readyQueue);
-                       				 softBlockCount--;
-                   			}
-					thread_outqueue(currentThread);
-					thread_enqueue(currentThread,&waitingQueue);
-               			    }
-
-				    else if(currentThread->t_pcb->prgMgr != NULL) {
-					//mittente, destinatario, motivo
-					msgq_add(currentThread,currentThread->t_pcb->prgMgr,(uintptr_t)&(currentThread->t_s.CP15_Cause));
-					//ottimizzare outqueue con la OUTTHREAD di amikaya + if
-					if (out_thread(&waitingQueue,currentThread->t_pcb->prgMgr)) {
-						thread_outqueue(currentThread->t_pcb->prgMgr);
-                       				 thread_enqueue(currentThread->t_pcb->prgMgr,&readyQueue);
-                       				 softBlockCount--;
-                   			}
-					thread_outqueue(currentThread);
-					thread_enqueue(currentThread,&waitingQueue);
-               			    }
-					/*
+		} else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+			    //se hanno un sysmgr adeguato
+				    if(current_thread->t_pcb->sysMgr != NULL) {
+						msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+						//sveglio il manager
+						if (out_thread(&wait_queue,current_thread->t_pcb->sysMgr)!=NULL) {
+					   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
+                       				 soft_block_count--;
+                   		}
+                   		//blocco il processo corrente
+						thread_outqueue(current_thread);
+						thread_enqueue(current_thread,&wait_queue);
+               		  }
+               		//se  hanno un program pgr adeguato
+				    else if(current_thread->t_pcb->prgMgr != NULL) {
+						msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
+						//sveglio il manager
+						if (out_thread(&wait_queue,current_thread->t_pcb->prgMgr)!=NULL) {
+							thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
+                       		soft_block_count--;
+                   		}
+                   		//blocco il processo corrente
+						thread_outqueue(current_thread);
+						thread_enqueue(current_thread,&wait_queue);
+               		}
+               		//altrimenti lo uccido
 				    else {
-			                    terminate(currentThread);
+			            ssi_terminate_thread(current_thread);
 					}
-					*/
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
+		//devo fare qualcosa di particolare?
 		;
 	}
 	//richiamo il mio amato scheduler

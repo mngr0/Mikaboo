@@ -3,34 +3,24 @@
 
 #include <listx.h>
 #include "nucleus.h"
-//#define BUS_INTERVALTIMER 0x10000020
-//#define BUS_TIMESCALE 0x10000024
+//Tempi dei block
 #define SCHED_TIME_SLICE 5000
 #define SCHED_PSEUDO_CLOCK 100000
 
-
-void init_dev_ctrl();
-
+//VARIABILI GLOBALI
+int thread_count;
+int soft_block_count;
+struct tcb_t* current_thread;
+struct list_head ready_queue;
+struct list_head wait_queue;
+struct list_head wait_pseudo_clock_queue;
 struct list_head device_list[DEV_USED_INTS*DEV_PER_INT];
 
-//#define SET_IT(timer_val) ((*((unsigned int *)BUS_INTERVALTIMER)) = (timer_val * (*(unsigned int *)BUS_TIMESCALE)))
 
-struct list_head readyQueue;
-
-struct list_head waitingQueue;
-
-struct list_head waitForPseudoClockQueue;
-
-struct tcb_t* currentThread;
-
-
-int threadCount;
-int softBlockCount;
-//extern unsigned int clock_TOD;
-//extern unsigned int slice_TOD;
-//extern unsigned int process_TOD;
-
-int isTimer(unsigned int TIMER_TYPE);
+//funzioni
+void init_dev_ctrl();
+int timer(unsigned int TIMER_TYPE);
+void set_next_timer();
 void scheduler();
 
 #endif

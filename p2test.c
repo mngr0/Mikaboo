@@ -94,6 +94,13 @@ memaddr stackalloc;
 
 void test(void) {
     ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+       STST(&tmpstate);
+    stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
+    tmpstate.sp = (stackalloc -= QPAGE);
+    tmpstate.pc = (memaddr) tty0out_thread;
+    tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
+        printid = create_thread(&tmpstate);
+ //   tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
 
 }
 
