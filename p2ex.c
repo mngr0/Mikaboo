@@ -133,6 +133,7 @@ void test(void) {
     msgrecv(p3t, NULL);
 
     tty0print("p3 completed\n");
+    /*
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -143,7 +144,6 @@ void test(void) {
     msgrecv(p4t, NULL);
     
     msgsend(p4t, tmpstate.sp);
-    BA();
     msgrecv(p4t, NULL);
    BA();
     if (geterrno() == 0)
@@ -152,7 +152,7 @@ void test(void) {
         tty0print("p4 errno ok\n");
     }
     tty0print("p4 completed\n");
-
+*/
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -300,19 +300,15 @@ void p4(void) {
 
     msgrecv(NULL, NULL);
     /* only the first incarnation reaches this point */
-    AA();
+    
     STST(&p4childstate);
     CSIN();
     p4childstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     p4childstate.pc = (memaddr) p4;
-    AB();
     child = create_process(&p4childstate);
-    AE();
     msgsend(child, NULL);
-    AA();
     msgrecv(child, NULL);
-    AC();
     terminate_process();
 
     panic("p4 survived TERMINATE_PROCESS\n");
@@ -361,19 +357,25 @@ void p5s(void) {
     uintptr_t retval;
     struct tcb_t* sender;
     state_t* state;
+    
     for (;;) {
         sender = msgrecv(NULL, &state);
+        AA();
         switch (state->a1) {
             case 42:
+                BA();
                 retval = 42;
                 break;
             case 3:
+                BB();
                 retval = 0;
                 break;
             default:
+                AB();
                 retval = -1;
                 break;
         }
+    CA();
         state->a1 = retval;
         msgsend(sender, NULL);
     }
@@ -394,23 +396,20 @@ void p5(void) {
     CSOUT;
     mgrstate.pc = (memaddr) p5p;
     setpgmmgr(create_thread(&mgrstate));
-
     CSIN();
     mgrstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     mgrstate.pc = (memaddr) p5m;
     settlbmgr(create_thread(&mgrstate));
-
     CSIN();
     mgrstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     mgrstate.pc = (memaddr) p5s;
-
     setsysmgr(create_thread(&mgrstate));
-
     /* this should me handled by p5s */
 
     retval = SYSCALL(42, 42, 42, 42);
+    
     if (retval == 42)
         tty0print("p5 syscall passup okay\n");
     else

@@ -56,12 +56,23 @@ void pgm_handler(){
 	useExStVec(SPECPGMT);
 	*/
 }
-
+void wake_me_up(struct tcb_t* sender,struct tcb_t* sleeper, unsigned int msg){
+		thread_outqueue(sleeper);
+		thread_enqueue(sleeper,&ready_queue);
+		* (unsigned int *)sleeper->t_s.a3=msg;
+		sleeper->t_s.a1=(unsigned int)sender;
+		sleeper->t_status=T_STATUS_READY;
+		//faccio in modo che non rientri nel codice della sys call
+		sleeper->t_s.pc += WORD_SIZE;
+	
+}
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	int msg_res;
 	//se il destinatario è in attesa proprio di questo messaggio
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
 		//lo sveglio
+		wake_me_up(sender,receiver,msg);
+	/*
 		thread_outqueue(receiver);
 		thread_enqueue(receiver,&ready_queue);
 		//setto i vari campi
@@ -70,8 +81,10 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 		receiver->t_status=T_STATUS_READY;
 		//faccio in modo che non rientri nel codice della sys call
 		receiver->t_s.pc += WORD_SIZE;
+	*/
 		//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
 		//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
+	
 		if (sender!=SSI)
 			sender->t_s.a1=0;
 		soft_block_count--;
@@ -111,6 +124,7 @@ void sys_bp_handler(){
 	if(a1!=NULL)
 		if(a1->t_status == T_STATUS_NONE){
 			//gestire err No
+			AB();
 			scheduler();
 		}
 
