@@ -164,6 +164,7 @@ unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){
 }
 void ssi_get_erro(uintptr_t* reply){
 	*reply=err_numb;
+	err_numb=NO_ERR;
 }
 
 //funzione principale dell SSI, controlla che il servizio sia un valore corretto e chiama la funzione corrispondente
