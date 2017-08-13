@@ -21,11 +21,12 @@ struct pcb_t {
 
 struct tcb_t {
 	struct pcb_t *t_pcb; /* pointer to the process */
-	state_t t_s ; /* processor state */
-
 	int t_status;
 
 	struct tcb_t *t_wait4sender; /* expected sender (if t_status == T_STATUS_W4MSG), NULL means accept msg from anybody */
+	
+	state_t t_s ; /* processor state */
+
 	struct list_head t_next; /* link the other elements of the list of threads in the same process */
 	struct list_head t_sched; /* link the other elements on the same scheduling list */
 	struct list_head t_msgq; /* list of pending messages for the current thread */

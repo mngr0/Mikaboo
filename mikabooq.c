@@ -147,6 +147,7 @@ int thread_free(struct tcb_t *oldthread){
 		INIT_LIST_HEAD(&oldthread->t_next);
 		list_add(&oldthread->t_next,&free_thread);
 		oldthread->t_pcb=NULL;
+		//reset_state(&oldthread->t_s);
 		oldthread->t_status= T_STATUS_NONE;
 		return 0;
 	}
@@ -182,22 +183,19 @@ struct tcb_t *thread_dequeue(struct list_head *queue){
 		return p;
 	}
 }
-struct tcb_t * out_thread(struct list_head *head, struct tcb_t* this){
+int thread_in_queue(struct list_head *head, struct tcb_t* this){
 	if(head==NULL)
-		return NULL;
+		return FALSE;
 	else if(list_empty(head))
-		return NULL;
+		return FALSE;
 	else{
-		struct list_head *t_temp=NULL;
-		list_for_each(t_temp, head) {
-       			 if( t_temp == &(this->t_next) ) {/* nel caso la trovo allora la elimino e lo restituisco */
-        		    list_del( &(this->t_next) );
-        		    INIT_LIST_HEAD(&(this->t_next));
-            			return this;
-       			 }
-   		 }
-   		 /* altrimenti restituisco NULL */
-   		 return NULL;
+		struct tcb_t *t_temp=NULL;
+		for_each_thread_in_q(t_temp,head){
+			if(t_temp==this){
+				return TRUE;
+			}
+		}
+		return FALSE;
 	}
 }
 void msgq_init(void){

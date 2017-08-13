@@ -133,7 +133,7 @@ void test(void) {
     msgrecv(p3t, NULL);
 
     tty0print("p3 completed\n");
-    /*
+    
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -144,15 +144,15 @@ void test(void) {
     msgrecv(p4t, NULL);
     
     msgsend(p4t, tmpstate.sp);
+    
     msgrecv(p4t, NULL);
-   BA();
     if (geterrno() == 0)
         panic("p1 wrong errno: recv from p4 should abort, p4 terminated\n");
     else {
         tty0print("p4 errno ok\n");
     }
     tty0print("p4 completed\n");
-*/
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -196,8 +196,8 @@ void test(void) {
     HALT();
 }
 
-#define MINLOOPTIME             10000
-#define LOOPNUM                 10000
+#define MINLOOPTIME             1000
+#define LOOPNUM                 1000
 struct tcb_t* p1t;
 struct tcb_t* aa0;
 struct pcb_t* aa1;
@@ -244,7 +244,8 @@ void p2(void) {
         panic("p2 GETCPUTIME sounds faulty\n");
 
     msgsend(p1t, NULL);
-    msgrecv(p1t, NULL);
+    //QUESTA MSGRECV E' SBAGLIATA
+    //msgrecv(p1t, NULL);
 
     terminate_thread();
 
@@ -252,7 +253,7 @@ void p2(void) {
 }
 
 #define PSEUDOCLOCK 100000
-#define NWAIT 10
+#define NWAIT 3
 cputime time1, time2;
 void p3(void) {
     tty0print("p3 started\n");
@@ -309,6 +310,7 @@ void p4(void) {
     child = create_process(&p4childstate);
     msgsend(child, NULL);
     msgrecv(child, NULL);
+
     terminate_process();
 
     panic("p4 survived TERMINATE_PROCESS\n");

@@ -36,7 +36,30 @@ void save_state(state_t *from, state_t *to){
 	to->TOD_Hi              = from->TOD_Hi;
 	to->TOD_Low             = from->TOD_Low;
 }
-
+void reset_state(state_t *t_s){
+	t_s->a1 = 0;
+	t_s->a2 = 0;
+	t_s->a3 = 0;
+	t_s->a4 = 0;
+	t_s->v1 = 0;
+	t_s->v2 = 0;
+	t_s->v3 = 0;
+	t_s->v4 = 0;
+	t_s->v5 = 0;
+	t_s->v6 = 0;
+	t_s->sl = 0;
+	t_s->fp = 0;
+	t_s->ip = 0;
+	t_s->sp = 0;
+	t_s->lr = 0;
+	t_s->pc = 0;
+	t_s->cpsr = 0;
+	t_s->CP15_Control = 0;
+	t_s->CP15_EntryHi = 0;
+	t_s->CP15_Cause = 0;
+	t_s->TOD_Hi = 0;
+	t_s->TOD_Low = 0;
+}
 void tlb_handler(){
     // Se un processo è eseguito dal processore salvo lo stato nella tlb_oldarea 
 	/*
@@ -72,16 +95,6 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
 		//lo sveglio
 		wake_me_up(sender,receiver,msg);
-	/*
-		thread_outqueue(receiver);
-		thread_enqueue(receiver,&ready_queue);
-		//setto i vari campi
-		* (unsigned int *)receiver->t_s.a3=msg;
-		receiver->t_s.a1=(unsigned int)sender;
-		receiver->t_status=T_STATUS_READY;
-		//faccio in modo che non rientri nel codice della sys call
-		receiver->t_s.pc += WORD_SIZE;
-	*/
 		//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
 		//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
 	
@@ -123,8 +136,18 @@ void sys_bp_handler(){
 	//spedire o ricevere da un morto causa un errore
 	if(a1!=NULL)
 		if(a1->t_status == T_STATUS_NONE){
+			switch(a0){
+				case SYS_SEND:
+					err_numb=ERR_SEND_TO_DEAD;
+					break;
+				case SYS_RECV:
+					err_numb=ERR_RECV_FROM_DEAD;
+					break;
+				default:
+					err_numb=ERR_UNKNOWN;
+					break;
+			}
 			//gestire err No
-			AB();
 			scheduler();
 		}
 
@@ -186,7 +209,7 @@ void sys_bp_handler(){
 				    if(current_thread->t_pcb->sysMgr != NULL) {
 						msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
 						//sveglio il manager
-						if (out_thread(&wait_queue,current_thread->t_pcb->sysMgr)!=NULL) {
+						if (thread_in_queue(&wait_queue,current_thread->t_pcb->sysMgr)) {
 					   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
                        				 soft_block_count--;
                    		}
@@ -198,7 +221,7 @@ void sys_bp_handler(){
 				    else if(current_thread->t_pcb->prgMgr != NULL) {
 						msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
 						//sveglio il manager
-						if (out_thread(&wait_queue,current_thread->t_pcb->prgMgr)!=NULL) {
+						if (thread_in_queue(&wait_queue,current_thread->t_pcb->prgMgr)) {
 							thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
                        		soft_block_count--;
                    		}
@@ -219,7 +242,7 @@ void sys_bp_handler(){
 				    if(current_thread->t_pcb->sysMgr != NULL) {
 						msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
 						//sveglio il manager
-						if (out_thread(&wait_queue,current_thread->t_pcb->sysMgr)!=NULL) {
+						if (thread_in_queue(&wait_queue,current_thread->t_pcb->sysMgr)) {
 					   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
                        				 soft_block_count--;
                    		}
@@ -231,7 +254,7 @@ void sys_bp_handler(){
 				    else if(current_thread->t_pcb->prgMgr != NULL) {
 						msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
 						//sveglio il manager
-						if (out_thread(&wait_queue,current_thread->t_pcb->prgMgr)!=NULL) {
+						if (thread_in_queue(&wait_queue,current_thread->t_pcb->prgMgr)) {
 							thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
                        		soft_block_count--;
                    		}

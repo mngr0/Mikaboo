@@ -73,7 +73,7 @@ void scheduler() {
             PANIC(); 
 	
         }
-	else if (thread_count > 0 && soft_block_count > 0) { /* in attesa di un interrupt -> wait state */
+	   else if (thread_count > 0 && soft_block_count > 0) { /* in attesa di un interrupt -> wait state */
             /* se ci sono thread in attesa dello pseudo tick,
              * carico il valore dello pseudo clock nel registro della cpu.*/
             if (!list_empty(&wait_pseudo_clock_queue)) {
@@ -81,7 +81,7 @@ void scheduler() {
             }
             // impostiamo lo stato del processore con gli interrupt abilitati  //CHECK PLS
             setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
-		WAIT();
+		  WAIT();
         }
     }
  else {

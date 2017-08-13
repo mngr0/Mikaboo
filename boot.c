@@ -120,24 +120,7 @@ int main() {
 	//assegno valore di sp
 	((struct tcb_t* )SSI)->t_s.sp=RAM_TOP - FRAME_SIZE;
 
- 
-	//PROCESSO TEST SPERO DI NON RIAVVIARLO MAI
-//	struct pcb_t* test=proc_alloc(starting_process);
-//	struct pcb_t* ptost=proc_alloc(starting_process);
-	/*
-	ttost=thread_alloc(starting_process);
-	if (ttost==NULL){
-		PANIC();
-	}
-	//abilita interrupt e kernel mode (CHECK)
-	ttost->t_s.cpsr=STATUS_ALL_INT_ENABLE((ttost->t_s.cpsr)|STATUS_SYS_MODE);
-	//disabilita memoria virtuale
-	ttost->t_s.CP15_Control =CP15_DISABLE_VM (ttost->t_s.CP15_Control);
-	//assegno valore di CP (CHECK)(v6 forse si puo togliere)
-	ttost->t_s.pc=(memaddr) tost;
-	//assegno valore di SP(CHECK)
-	ttost->t_s.sp=RAM_TOP - (2*FRAME_SIZE) ;
-*/
+
 	//creo processo figlio del ssi, il mio odiato test
 	 struct pcb_t* proc_test=proc_alloc(starting_process);
 

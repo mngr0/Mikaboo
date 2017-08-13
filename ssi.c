@@ -14,7 +14,9 @@ void check_death(struct tcb_t* t_victim){
 	for_each_thread_in_q(t_temp,&wait_queue){
 		if(t_temp->t_wait4sender==t_victim  ){
 			CA();
+			err_numb=ERR_RECV_FROM_DEAD;
 			wake_me_up(t_victim,t_temp,NULL);
+			break;
 		}
 	}
 }
@@ -23,13 +25,14 @@ void check_death(struct tcb_t* t_victim){
 //uccide thread
 void exterminate_thread(struct pcb_t * victim){
     while (!list_empty(&victim->p_threads)){
-        if(out_thread(&ready_queue,proc_firstthread(victim))==NULL){
+
+        check_death(proc_firstthread(victim));
+        if(thread_in_queue(&ready_queue,proc_firstthread(victim))){
           soft_block_count--;  
         }
         else{
             thread_outqueue(proc_firstthread(victim));
         }
-        check_death(proc_firstthread(victim));
         thread_count--;
         thread_free(proc_firstthread(victim));
         
@@ -40,7 +43,7 @@ void exterminate_proc(struct pcb_t * victim){
 	exterminate_thread(victim);
 	struct pcb_t * temp;
 	while (!list_empty(&victim->p_children)){
-		temp=proc_firstchild(victim->p_parent);
+		temp=proc_firstchild(victim);
 		exterminate_proc(temp);
 	}
 	proc_delete(victim);
@@ -53,8 +56,8 @@ unsigned int ssi_terminate_process(struct tcb_t* sender){
 //elimina un thread e in caso che non ci siano più thread di quel processo, uccide la sua stirpe
 unsigned int ssi_terminate_thread(struct tcb_t* sender){
 	struct pcb_t* parent=sender->t_pcb;
-	thread_outqueue(sender);
 	check_death(sender);
+	thread_outqueue(sender);
 	thread_free(sender);
 	if(list_empty(&parent->p_threads)){
 		exterminate_proc(parent);
@@ -160,7 +163,9 @@ unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){
 	return TRUE;
 
 }
-
+void ssi_get_erro(uintptr_t* reply){
+	*reply=err_numb;
+}
 
 //funzione principale dell SSI, controlla che il servizio sia un valore corretto e chiama la funzione corrispondente
 unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t* reply) {
@@ -174,6 +179,7 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 	switch (*service) {
         // valori della richiesta 
 		case GET_ERRNO:
+			ssi_get_erro(reply);
 			break;
 		case CREATE_PROCESS:
 			ssi_create_process((state_t*)*(msg_ssi+1),sender,reply);
@@ -185,6 +191,7 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 			return ssi_terminate_process(sender);
 			break;
 		case TERMINATE_THREAD:
+			AA();
 			return ssi_terminate_thread(sender);
 			break;
 		case SETPGMMGR:
