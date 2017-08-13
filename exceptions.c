@@ -134,7 +134,7 @@ void sys_bp_handler(){
 	int msg_res;
 	// Se l'eccezione è di tipo System call 
 	//spedire o ricevere da un morto causa un errore
-	if(a1!=NULL)
+	if(a1!=NULL){
 		if(a1->t_status == T_STATUS_NONE){
 			switch(a0){
 				case SYS_SEND:
@@ -144,13 +144,12 @@ void sys_bp_handler(){
 					err_numb=ERR_RECV_FROM_DEAD;
 					break;
 				default:
-					err_numb=ERR_UNKNOWN;
 					break;
 			}
 			//gestire err No
 			scheduler();
 		}
-
+	}
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){

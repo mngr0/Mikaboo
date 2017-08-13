@@ -1,7 +1,7 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
-#define ERR_UNKNOWN 0
+#define NO_ERROR 0
 #define ERR_SEND_TO_DEAD 1
 #define ERR_RECV_FROM_DEAD 2
 //funzioni

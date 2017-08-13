@@ -13,7 +13,6 @@ void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;
 	for_each_thread_in_q(t_temp,&wait_queue){
 		if(t_temp->t_wait4sender==t_victim  ){
-			CA();
 			err_numb=ERR_RECV_FROM_DEAD;
 			wake_me_up(t_victim,t_temp,NULL);
 			break;
