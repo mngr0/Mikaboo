@@ -103,21 +103,21 @@ uintptr_t p5send = 0;
 
 void test(void) {
     
-    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+  //  ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
     STST(&tmpstate);
     stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) tty0out_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid = create_thread(&tmpstate);
-    tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
+  //  tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
     testt = get_mythreadid();
 
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
-    tty0print("NUCLEUS: critical section thread started\n");
-
+  //  tty0print("NUCLEUS: critical section thread started\n");
+/*
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -153,7 +153,7 @@ void test(void) {
         tty0print("p4 errno ok\n");
     }
     tty0print("p4 completed\n");
-
+*/
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -334,7 +334,9 @@ void p5m(void) {
     struct tcb_t* sender;
     state_t* state;
     for (;;) {
+        AB();
         sender = msgrecv(NULL, &state);
+        AC();
         switch (CAUSE_EXCCODE_GET(state->CP15_Cause)) {
             default:
                 tty0print("p5 mem error passup okay\n");
@@ -343,7 +345,7 @@ void p5m(void) {
         }
         msgsend(sender, NULL);
     }
-}
+    }
 
 void p5s(void) {
     uintptr_t retval;
@@ -431,7 +433,7 @@ void p5a(void) {
     // The loop is added in order to allow debug in case of failure (manually check p5send)
     for (;;);
 }
-
+    
 void p6(void) {
     tty0print("p6 started\n");
     *((memaddr*) BADADDR) = 0;

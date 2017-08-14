@@ -7,7 +7,7 @@
 #include "scheduler.h"
 #include "nucleus.h"
 #include "exceptions.h"
-
+#include "ssi.h"
 state_t *tlb_old   = (state_t*) TLB_OLDAREA;
 state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
 state_t *sysbp_old   = (state_t*) SYSBK_OLDAREA;
@@ -17,6 +17,7 @@ void BA(){}
 void BB(){}
 void BC(){}
 void BD(){}
+void BE(){}
 void save_state(state_t *from, state_t *to){
 	to->a1                  = from->a1;
 	to->a2                  = from->a2;
@@ -66,33 +67,7 @@ void reset_state(state_t *t_s){
 	t_s->TOD_Hi = 0;
 	t_s->TOD_Low = 0;
 }
-void tlb_handler(){
-    // Se un processo è eseguito dal processore salvo lo stato nella tlb_oldarea 
-	/*
-	if(currentProcess != NULL){
-		save_state(tlb_old, &currentProcess->p_s);
-	}
 
-	useExStVec(SPECTLB);
-	*/
-}
-
-void pgm_handler(){
-    //se un processo è eseguito dal processore salvo lo stato nella pgmtrap_oldarea*/
-	/* if(currentProcess != NULL){
-		save_state(pgmtrap_old, &currentProcess->sp);
-	}
-	useExStVec(SPECPGMT);
-	*/
-}
-
-void wake_me_up(struct tcb_t* sleeper){
-		thread_outqueue(sleeper);
-		thread_enqueue(sleeper,&ready_queue);
-		
-		sleeper->t_status=T_STATUS_READY;
-		
-}
 
 void put_thread_sleep(struct tcb_t* t){
 	
@@ -102,8 +77,51 @@ void put_thread_sleep(struct tcb_t* t){
 			current_thread=NULL;
 		}
 		soft_block_count++;
-	
 }
+
+
+void tlb_handler(){
+
+	
+	if(current_thread!= NULL){
+		if(current_thread->t_pcb->tlbMgr!=NULL){
+			save_state(tlb_old, &(current_thread->t_s));
+			sys_send_msg(current_thread,current_thread->t_pcb->tlbMgr,(uintptr_t)&(current_thread->t_s));
+			put_thread_sleep(current_thread);	
+		}
+        else{
+            ssi_terminate_thread(current_thread);
+        }
+	}
+	scheduler();
+}
+
+void pgm_handler(){
+    //gestione tempi
+    if(current_thread != NULL){
+        if(current_thread->t_pcb->prgMgr!=NULL){
+            save_state(pgmtrap_old, &current_thread->t_s);
+            sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)pgmtrap_old);  
+            put_thread_sleep(current_thread);
+        }
+        else{
+            ssi_terminate_thread(current_thread);
+        }
+    }
+    scheduler();
+}
+
+void wake_me_up(struct tcb_t* sleeper){
+		thread_outqueue(sleeper);
+		thread_enqueue(sleeper,&ready_queue);
+		
+		sleeper->t_status=T_STATUS_READY;
+		//faccio in modo che non rientri nel codice della sys call
+		//TODO questa operazione e' da avere qui dentro? (non verrra' sempre chiamato da una syscall)
+		
+}
+
+
 unsigned int b1,b2,b3;
 
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
@@ -175,23 +193,6 @@ void sys_bp_handler(){
 	//salvo messaggio
 	int msg_res;
 	// Se l'eccezione è di tipo System call 
-	//spedire o ricevere da un morto causa un errore
-	/*if(a1!=NULL){
-		if(a1->t_status == T_STATUS_NONE){
-			switch(a0){
-				case SYS_SEND:
-					err_numb=ERR_SEND_TO_DEAD;
-					break;
-				case SYS_RECV:
-					err_numb=ERR_RECV_FROM_DEAD;
-					break;
-				default:
-					break;
-			}
-			//gestire err No
-			scheduler();
-		}
-	}*/
 
 	if(cause==EXC_SYSCALL){
 
@@ -208,7 +209,6 @@ void sys_bp_handler(){
 	                //a1 contiene l'indirizzo del thread destinatario
         			//a2 contiene il puntatore al messaggio
 					if(a1->t_pcb->sysMgr==current_thread){
-						BD();
 						wake_me_up(a1);
 						// e' un messaggio dal sys_mgr al thread che lo ha causato
 						// non devo mandare il messaggio ma fare la seguente istruzione
@@ -218,10 +218,10 @@ void sys_bp_handler(){
 						//e forse 
 						//a1->t_s.pc-=WORD_SIZE
 
-					}else if(a1->t_pcb->sysMgr==current_thread){
-						//anche qui forse
-						//a1->t_s.pc-=WORD_SIZE;
-						//e poi boh
+					}else if(a1->t_pcb->prgMgr==current_thread){
+						wake_me_up(a1);
+					}else if(a1->t_pcb->tlbMgr==current_thread){
+						wake_me_up(a1);
 					}else{
 
 						//faccio la send
@@ -270,34 +270,12 @@ void sys_bp_handler(){
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sysMgr != NULL) {
 				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s));
-				    	aastate1=&(current_thread->t_s);
-				    	BA();
-				    	
 				    	put_thread_sleep(current_thread);
-						//msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
-						//sveglio il manager
-						// if (thread_in_queue(&wait_queue,current_thread->t_pcb->sysMgr)) {
-					 //   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
-      //                  				 soft_block_count--;
-      //              		}
-                   		//blocco il processo corrente
-						// thread_outqueue(current_thread);
-						// thread_enqueue(current_thread,&wait_queue);
                		  }
                		//se  hanno un program pgr adeguato
 				    else if(current_thread->t_pcb->prgMgr != NULL) {
-				    	
 				    	sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s));
 				    	put_thread_sleep(current_thread);
-						// msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
-						// //sveglio il manager
-						// if (thread_in_queue(&wait_queue,current_thread->t_pcb->prgMgr)) {
-						// 	thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
-      //                  		soft_block_count--;
-      //              		}
-      //              		//blocco il processo corrente
-						// thread_outqueue(current_thread);
-						// thread_enqueue(current_thread,&wait_queue);
                		}
                		//lo uccido
 				    else {
@@ -307,35 +285,29 @@ void sys_bp_handler(){
 				break; 
 			}
 		// Se invece è in user mode 
-		} else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
-			    //se hanno un sysmgr adeguato
-				    if(current_thread->t_pcb->sysMgr != NULL) {
-						msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
-						//sveglio il manager
-						if (thread_in_queue(&wait_queue,current_thread->t_pcb->sysMgr)) {
-					   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
-                       				 soft_block_count--;
-                   		}
-                   		//blocco il processo corrente
-						thread_outqueue(current_thread);
-						thread_enqueue(current_thread,&wait_queue);
-               		  }
-               		//se  hanno un program pgr adeguato
-				    else if(current_thread->t_pcb->prgMgr != NULL) {
-						msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
-						//sveglio il manager
-						if (thread_in_queue(&wait_queue,current_thread->t_pcb->prgMgr)) {
-							thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
-                       		soft_block_count--;
-                   		}
-                   		//blocco il processo corrente
-						thread_outqueue(current_thread);
-						thread_enqueue(current_thread,&wait_queue);
-               		}
-               		//altrimenti lo uccido
-				    else {
-			            ssi_terminate_thread(current_thread);
-					}
+		}else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+		    if((a0==SYS_RECV)||(a0==SYS_SEND)){
+	            if(current_thread->t_pcb->prgMgr != NULL) {
+	                save_state(sysbp_old,pgmtrap_old);
+	                pgmtrap_old->CP15_Cause = CAUSE_EXCCODE_SET(pgmtrap_old->CP15_Cause, EXC_RESERVEDINSTR);
+	                pgm_handler();
+	                //sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s));
+	                //put_thread_sleep(current_thread);
+	            }
+	            else {
+	                ssi_terminate_thread(current_thread);
+	            }
+
+
+	        }else if(a0<MAX_REQUEST_VALUE){
+				if(current_thread->t_pcb->sysMgr != NULL) {
+			    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s));
+			    	put_thread_sleep(current_thread);
+	       		}
+			    else {
+		            ssi_terminate_thread(current_thread);
+				}
+			}
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
