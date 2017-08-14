@@ -10,6 +10,7 @@
 #include "p2test.h"
 
 void * SSI;
+void * MGRMGR;
 struct tcb_t* thread_test;
 
 struct tcb_t* ttost;
@@ -84,6 +85,7 @@ void tost() {
 
 //Boot del nostro programma
 int main() {
+	MGRMGR=1;
 	init_dev_ctrl();
 	current_thread=NULL;
 	//Inizializzo liste 

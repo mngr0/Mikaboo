@@ -154,7 +154,7 @@ void test(void) {
     tty0print("p4 completed\n");
 
 
-/*
+
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -169,8 +169,6 @@ void test(void) {
 
     if (p5send != 2) tty0print("p5a usermode msg priv kill is ok\n");
     else panic("p5a usermode msg priv kill error\n");
-
-*/
 
 
     CSIN();
@@ -189,6 +187,7 @@ void test(void) {
     msgrecv(p7t, NULL);
     tty0print("p7 completed\n");
     //check total number of thread
+
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -295,10 +294,10 @@ void p4(void) {
 
     switch (p4inc) {
         case 1:
-            tty0print("first incarnation of p4 starts\n");
+            tty0print("first\n");
             break;
         case 2:
-            tty0print("second incarnation of p4 starts\n");
+            tty0print("second\n");
             break;
     }
     p4inc++;

@@ -36,6 +36,7 @@ void save_state(state_t *from, state_t *to){
 	to->TOD_Hi              = from->TOD_Hi;
 	to->TOD_Low             = from->TOD_Low;
 }
+
 void reset_state(state_t *t_s){
 	t_s->a1 = 0;
 	t_s->a2 = 0;
@@ -169,18 +170,34 @@ void sys_bp_handler(){
 					PANIC();
 				//devo inviare un messaggio
 				case SYS_SEND:
-	                //a0 contiene la costante 1 (messaggio inviato)
+					//a0 contiene la costante 1 (messaggio inviato)
 	                //a1 contiene l'indirizzo del thread destinatario
         			//a2 contiene il puntatore al messaggio
+					if(a1->t_pcb->sysMgr==current_thread){
+						// e' un messaggio dal sys_mgr al thread che lo ha causato
+						// non devo mandare il messaggio ma fare la seguente istruzione
+						a1->t_s.a1=current_thread->t_s.a1;
+						// che fa funzionare retval = SYSCALL(42, 42, 42, 42);
 
-					//faccio la send
-					sys_send_msg(current_thread,a1,a2);
+						//e forse 
+						//a1->t_s.pc-=WORD_SIZE
+
+					}else if(a1->t_pcb->sysMgr==current_thread){
+						//anche qui forse
+						//a1->t_s.pc-=WORD_SIZE;
+						//e poi boh
+					}else{
+
+						//faccio la send
+						sys_send_msg(current_thread,a1,a2);
+					}
 					// Evito che rientri nel codice della syscall
 					current_thread->t_s.pc += WORD_SIZE;
 					LDST(&current_thread->t_s);
 				break;
 				//devo ricevere un messaggio
 				case SYS_RECV:
+
 					//a0 contiene costante 2
 					//a1 contiene l'indirizzo del mittente(null==tutti)
 					//a2 contiene puntatore al campo dove regitrare il messaggio(NULL== non registrare)
@@ -216,27 +233,31 @@ void sys_bp_handler(){
 					//check TUTTI I PUNTATORI
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sysMgr != NULL) {
-						msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+				    	put_thread_sleep(current_thread);
+						//msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
 						//sveglio il manager
-						if (thread_in_queue(&wait_queue,current_thread->t_pcb->sysMgr)) {
-					   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
-                       				 soft_block_count--;
-                   		}
+						// if (thread_in_queue(&wait_queue,current_thread->t_pcb->sysMgr)) {
+					 //   				 thread_enqueue(current_thread->t_pcb->sysMgr,&ready_queue);
+      //                  				 soft_block_count--;
+      //              		}
                    		//blocco il processo corrente
-						thread_outqueue(current_thread);
-						thread_enqueue(current_thread,&wait_queue);
+						// thread_outqueue(current_thread);
+						// thread_enqueue(current_thread,&wait_queue);
                		  }
                		//se  hanno un program pgr adeguato
 				    else if(current_thread->t_pcb->prgMgr != NULL) {
-						msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
-						//sveglio il manager
-						if (thread_in_queue(&wait_queue,current_thread->t_pcb->prgMgr)) {
-							thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
-                       		soft_block_count--;
-                   		}
-                   		//blocco il processo corrente
-						thread_outqueue(current_thread);
-						thread_enqueue(current_thread,&wait_queue);
+				    	sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+				    	put_thread_sleep(current_thread);
+						// msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
+						// //sveglio il manager
+						// if (thread_in_queue(&wait_queue,current_thread->t_pcb->prgMgr)) {
+						// 	thread_enqueue(current_thread->t_pcb->prgMgr,&ready_queue);
+      //                  		soft_block_count--;
+      //              		}
+      //              		//blocco il processo corrente
+						// thread_outqueue(current_thread);
+						// thread_enqueue(current_thread,&wait_queue);
                		}
                		//lo uccido
 				    else {

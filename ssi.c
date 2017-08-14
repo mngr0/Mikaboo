@@ -137,11 +137,7 @@ unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
 	return FALSE;
 }
-int aA;
-int aB;
-int aC;
-int aD;
-int aE;
+
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
@@ -150,9 +146,6 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	//a questo punto dev_numb indica l' indice del campo COMMAND del device
 	//equivale a (indice del device)*2 per tutti i device, 
 	//tranne per i terminali in scrittura, dove vale (indice del device)*2+1
-	aA=dev_type;
-	aC=dev_numb;
-	aE=(dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT);
 	if(dev_type==IL_TERMINAL){
 		//se e' un terminale, controllo se e' in scrittura, in quel caso viene usata una diversa lista di coda
 		if(dev_numb%2==1){
@@ -160,16 +153,10 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 		}
 	}
 	dev_numb/=2;
-	
-	aB=dev_type;
-	aD=dev_numb;
-	CA();
 	struct list_head* queue;
 	queue=select_io_queue(dev_type,dev_numb);
 	thread_outqueue(sender);
 	thread_enqueue(sender , queue );
-	//thread_enqueue(current_thread , &wait_queue);
-	//stampare
 	memaddr *base = (memaddr *) ( *(msg_ssi+1));
 	*(base) = *(msg_ssi+2);
 	return FALSE;
