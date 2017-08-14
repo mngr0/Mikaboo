@@ -86,26 +86,25 @@ void pgm_handler(){
 	*/
 }
 
-void wake_me_up(struct tcb_t* sender,struct tcb_t* sleeper, unsigned int msg){
+void wake_me_up(struct tcb_t* sleeper){
 		thread_outqueue(sleeper);
 		thread_enqueue(sleeper,&ready_queue);
-		* (unsigned int *)sleeper->t_s.a3=msg;
-		sleeper->t_s.a1=(unsigned int)sender;
+		
 		sleeper->t_status=T_STATUS_READY;
 		//faccio in modo che non rientri nel codice della sys call
 		//TODO questa operazione e' da avere qui dentro? (non verrra' sempre chiamato da una syscall)
-		sleeper->t_s.pc += WORD_SIZE;
+		
 }
 
 void put_thread_sleep(struct tcb_t* t){
-	if(thread_in_queue(&ready_queue,t)){
+	
 		thread_outqueue(t);
 		thread_enqueue(t,&wait_queue);
 		if(t==current_thread){
 			current_thread=NULL;
 		}
 		soft_block_count++;
-	}
+	
 }
 unsigned int b1,b2,b3;
 
@@ -114,12 +113,16 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	//se il destinatario è in attesa proprio di questo messaggio
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
 		//lo sveglio
-		wake_me_up(sender,receiver,msg);
+		* (unsigned int *)receiver->t_s.a3=msg;
+		receiver->t_s.a1=(unsigned int)sender;
+
+		wake_me_up(receiver);
+		receiver->t_s.pc += WORD_SIZE;
 		//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
 		//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
 	
-		if (sender!=SSI)
-			sender->t_s.a1=0;
+		//if (sender!=SSI)
+		//	sender->t_s.a1=0;
 		soft_block_count--;
 	}
 	//altrimenti lo incodo normalmente
@@ -129,6 +132,7 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 		if(msg_res==-1){
 			//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
 			//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
+			//ERRNO!!!!!
 			if (sender!=SSI)
 				sender->t_s.a1=-1;
 		}
@@ -157,7 +161,7 @@ void check_thread_alive(struct tcb_t * t,int cause){
 }
 
 
-
+state_t* aastate1;
 struct tcb_t * a1;
 //gestione system calle breaking point
 void sys_bp_handler(){
@@ -207,6 +211,7 @@ void sys_bp_handler(){
         			//a2 contiene il puntatore al messaggio
 					if(a1->t_pcb->sysMgr==current_thread){
 						BD();
+						wake_me_up(a1);
 						// e' un messaggio dal sys_mgr al thread che lo ha causato
 						// non devo mandare il messaggio ma fare la seguente istruzione
 						//a1->t_s.a1=current_thread->t_s.a1;
@@ -267,6 +272,7 @@ void sys_bp_handler(){
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sysMgr != NULL) {
 				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s));
+				    	aastate1=&(current_thread->t_s);
 				    	BA();
 				    	
 				    	put_thread_sleep(current_thread);
@@ -282,6 +288,7 @@ void sys_bp_handler(){
                		  }
                		//se  hanno un program pgr adeguato
 				    else if(current_thread->t_pcb->prgMgr != NULL) {
+				    	
 				    	sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s));
 				    	put_thread_sleep(current_thread);
 						// msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));

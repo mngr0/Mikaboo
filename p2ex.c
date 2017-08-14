@@ -199,7 +199,8 @@ void p5s(void) {
    
     for (;;) {
         sender = msgrecv(NULL, &state);
-        AD();
+        astate1=state;
+        AA();
         switch (state->a1) {
             case 42:
                 AB();
@@ -215,10 +216,9 @@ void p5s(void) {
                 break;
         }
         state->a1 = retval;
-        AD();
-        astate1=state;
+        AE();
         msgsend(sender, NULL);
-        AD();
+        AB();
     }
 }
 
@@ -255,12 +255,15 @@ void p5(void) {
     AE();
     retval = SYSCALL(42, 42, 42, 42);
     AF();
+    AF();
+    AF();
+    AF();
     if (retval == 42)
         tty0print("p5 syscall passup okay\n");
     else
         panic("p5 syscall passup error\n");
 
-    *((memaddr*) BADADDR) = 0;
+    //*((memaddr*) BADADDR) = 0;
 
     panic("p5 survived mem error");
 }
