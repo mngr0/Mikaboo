@@ -127,7 +127,7 @@ void test(void) {
     msgrecv(p3t, NULL);
 
     tty0print("p3 completed\n");
-    */
+    
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -144,7 +144,7 @@ void test(void) {
         tty0print("p4 errno ok\n");
     }
     tty0print("p4 completed\n");
-
+    */
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;

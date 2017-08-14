@@ -81,6 +81,9 @@ int proc_delete(struct pcb_t *oldproc){
 		list_del(&oldproc->p_siblings);
 		INIT_LIST_HEAD(&oldproc->p_siblings);
 	 	list_add(&oldproc->p_siblings,&free_proc); //lo aggiungo ai processi liberi
+	 	oldproc->prgMgr=NULL;
+		oldproc->sysMgr=NULL;
+		oldproc->tlbMgr=NULL;
 	 	oldproc->p_parent=NULL;
 	 	return 0;
 	 }

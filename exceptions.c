@@ -81,23 +81,17 @@ void put_thread_sleep(struct tcb_t* t){
 
 
 void tlb_handler(){
-	BA();
-	
 	if(current_thread!= NULL){
-		BB();
 		if(current_thread->t_pcb->tlbMgr!=NULL){
-			BC();
 			save_state(tlb_old, &(current_thread->t_s));
 			sys_send_msg(current_thread,current_thread->t_pcb->tlbMgr,(uintptr_t)&(current_thread->t_s));
 			put_thread_sleep(current_thread);	
 		}
         else{
-        	BD();
             ssi_terminate_thread(current_thread);
-            current_thread = NULL;
+            current_thread=NULL;
         }
 	}
-	BE();
 	scheduler();
 }
 
@@ -271,6 +265,7 @@ void sys_bp_handler(){
 					}
 					break;
 				default:
+
 					//check TUTTI I PUNTATORI
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sysMgr != NULL) {
@@ -285,11 +280,13 @@ void sys_bp_handler(){
                		//lo uccido
 				    else {
 			            ssi_terminate_thread(current_thread);
+			            current_thread=NULL;
 					}
 				break; 
 			}
 		// Se invece è in user mode 
 		}else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+		    BA();
 		    if((a0==SYS_RECV)||(a0==SYS_SEND)){
 	            if(current_thread->t_pcb->prgMgr != NULL) {
 	                save_state(sysbp_old,pgmtrap_old);
