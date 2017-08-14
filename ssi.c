@@ -139,22 +139,31 @@ unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 }
 int aA;
 int aB;
+int aC;
+int aD;
+int aE;
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
 	unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
-	unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT)/(DEV_REG_SIZE));
+	unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE;
+	//a questo punto dev_numb indica l' indice del campo COMMAND del device
+	//equivale a (indice del device)*2 per tutti i device, 
+	//tranne per i terminali in scrittura, dove vale (indice del device)*2+1
+	aA=dev_type;
+	aC=dev_numb;
+	aE=(dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT);
 	if(dev_type==IL_TERMINAL){
+		//se e' un terminale, controllo se e' in scrittura, in quel caso viene usata una diversa lista di coda
 		if(dev_numb%2==1){
 			dev_type+=1;
-			dev_numb/+2;
 		}
 	}
+	dev_numb/=2;
 	
-    //TODO CATCH TERMINAL READ, controlling command
-
-	aA=dev_type;
-	aB=dev_numb;
+	aB=dev_type;
+	aD=dev_numb;
+	CA();
 	struct list_head* queue;
 	queue=select_io_queue(dev_type,dev_numb);
 	thread_outqueue(sender);

@@ -87,9 +87,19 @@ void wake_me_up(struct tcb_t* sender,struct tcb_t* sleeper, unsigned int msg){
 		sleeper->t_s.a1=(unsigned int)sender;
 		sleeper->t_status=T_STATUS_READY;
 		//faccio in modo che non rientri nel codice della sys call
+		//TODO questa operazione e' da avere qui dentro? (non verrra' sempre chiamato da una syscall)
 		sleeper->t_s.pc += WORD_SIZE;
-	
 }
+
+void put_thread_sleep(struct tcb_t* t){
+	if(thread_in_queue(&ready_queue,t)){
+		thread_outqueue(t);
+		thread_enqueue(t,&wait_queue);
+		soft_block_count++;
+	}
+}
+
+
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	int msg_res;
 	//se il destinatario è in attesa proprio di questo messaggio
@@ -114,7 +124,6 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 				sender->t_s.a1=-1;
 		}
 	}
-
 }
 
 void sys_recv_msg(){}
