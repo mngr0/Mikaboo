@@ -153,6 +153,9 @@ void test(void) {
     }
     tty0print("p4 completed\n");
 
+
+/*
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -166,6 +169,9 @@ void test(void) {
 
     if (p5send != 2) tty0print("p5a usermode msg priv kill is ok\n");
     else panic("p5a usermode msg priv kill error\n");
+
+*/
+
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -196,8 +202,8 @@ void test(void) {
     HALT();
 }
 
-#define MINLOOPTIME             1000
-#define LOOPNUM                 1000
+#define MINLOOPTIME             100
+#define LOOPNUM                 100
 struct tcb_t* p1t;
 struct tcb_t* aa0;
 struct pcb_t* aa1;
@@ -253,7 +259,7 @@ void p2(void) {
 }
 
 #define PSEUDOCLOCK 100000
-#define NWAIT 3
+#define NWAIT 1
 cputime time1, time2;
 void p3(void) {
     tty0print("p3 started\n");

@@ -3,6 +3,7 @@
 #include "nucleus.h"
 #include "scheduler.h"
 #include "exceptions.h"
+#include "interrupts.h"
 
 //void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
 //}
@@ -19,7 +20,6 @@ void check_death(struct tcb_t* t_victim){
 		}
 	}
 }
-
 
 //uccide thread
 void exterminate_thread(struct pcb_t * victim){
@@ -137,15 +137,26 @@ unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
 	return FALSE;
 }
-
+int aA;
+int aB;
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
-	unsigned int dev_type=IL_TERMINAL;//TODO
-	unsigned int dev_numb=0;
+	unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
+	unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT)/(DEV_REG_SIZE));
+	if(dev_type==IL_TERMINAL){
+		if(dev_numb%2==1){
+			dev_type+=1;
+			dev_numb/+2;
+		}
+	}
+	
+    //TODO CATCH TERMINAL READ, controlling command
+
+	aA=dev_type;
+	aB=dev_numb;
 	struct list_head* queue;
 	queue=select_io_queue(dev_type,dev_numb);
-	//q=&device_list[(dev_type-3)*DEV_PER_INT+dev_numb];
 	thread_outqueue(sender);
 	thread_enqueue(sender , queue );
 	//thread_enqueue(current_thread , &wait_queue);

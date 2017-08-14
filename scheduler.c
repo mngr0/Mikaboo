@@ -12,7 +12,7 @@ unsigned int clock_TOD = 0;
 //inizializzazione liste di attesa dei device
 void init_dev_ctrl(){
     int i;
-    for (i=0;i<DEV_USED_INTS*DEV_PER_INT;i++){
+    for (i=0;i<DEV_USED_INTS*(DEV_PER_INT+1);i++){
         INIT_LIST_HEAD(&device_list[i]);
     }
 }

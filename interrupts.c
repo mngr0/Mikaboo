@@ -135,7 +135,7 @@ void terminal_handler(){
 	memaddr* command_reg_write  = (memaddr*) (term_reg + TERM_COMMAND_WRITE);
 	 //è stata fatta una scrittura
 	if(((*status_reg_write) & 0x0F) == DEV_TTRS_S_CHARTRSM){
-		ack((IL_TERMINAL), device, ((*status_reg_write)), command_reg_write);
+		ack((IL_TERMINAL+1), device, ((*status_reg_write)), command_reg_write);
 	}
 	//è stata fatta una lettura
 	else if(((*status_reg_read) & 0x0F) == DEV_TRCV_S_CHARRECV){
