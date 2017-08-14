@@ -68,7 +68,6 @@ void reset_state(state_t *t_s){
 	t_s->TOD_Low = 0;
 }
 
-
 void put_thread_sleep(struct tcb_t* t){
 	
 		thread_outqueue(t);
@@ -76,23 +75,29 @@ void put_thread_sleep(struct tcb_t* t){
 		if(t==current_thread){
 			current_thread=NULL;
 		}
+		t->t_status=T_STATUS_W4MSG;
 		soft_block_count++;
 }
 
 
 void tlb_handler(){
-
+	BA();
 	
 	if(current_thread!= NULL){
+		BB();
 		if(current_thread->t_pcb->tlbMgr!=NULL){
+			BC();
 			save_state(tlb_old, &(current_thread->t_s));
 			sys_send_msg(current_thread,current_thread->t_pcb->tlbMgr,(uintptr_t)&(current_thread->t_s));
 			put_thread_sleep(current_thread);	
 		}
         else{
+        	BD();
             ssi_terminate_thread(current_thread);
+            current_thread = NULL;
         }
 	}
+	BE();
 	scheduler();
 }
 
@@ -106,6 +111,7 @@ void pgm_handler(){
         }
         else{
             ssi_terminate_thread(current_thread);
+            current_thread =NULL;
         }
     }
     scheduler();
@@ -195,7 +201,6 @@ void sys_bp_handler(){
 	// Se l'eccezione è di tipo System call 
 
 	if(cause==EXC_SYSCALL){
-
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
 			switch(a0){
@@ -281,7 +286,6 @@ void sys_bp_handler(){
 				    else {
 			            ssi_terminate_thread(current_thread);
 					}
-
 				break; 
 			}
 		// Se invece è in user mode 
@@ -296,6 +300,7 @@ void sys_bp_handler(){
 	            }
 	            else {
 	                ssi_terminate_thread(current_thread);
+	                current_thread =NULL;
 	            }
 
 
@@ -306,6 +311,7 @@ void sys_bp_handler(){
 	       		}
 			    else {
 		            ssi_terminate_thread(current_thread);
+		            current_thread =NULL;
 				}
 			}
 		}

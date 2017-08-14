@@ -12,7 +12,6 @@ void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;
 	for_each_thread_in_q(t_temp,&wait_queue){
 		if(t_temp->t_wait4sender==t_victim  ){
-
 			err_numb=ERR_RECV_FROM_DEAD;
 			wake_me_up(t_temp);
 			*(unsigned int*)t_temp->t_s.a3=NULL;
@@ -31,9 +30,7 @@ void exterminate_thread(struct pcb_t * victim){
         if(thread_in_queue(&ready_queue,proc_firstthread(victim))){
           soft_block_count--;  
         }
-        else{
-            thread_outqueue(proc_firstthread(victim));
-        }
+        thread_outqueue(proc_firstthread(victim));
         thread_count--;
         thread_free(proc_firstthread(victim));
         
@@ -200,7 +197,6 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 			return ssi_terminate_process(sender);
 			break;
 		case TERMINATE_THREAD:
-			AA();
 			return ssi_terminate_thread(sender);
 			break;
 		case SETPGMMGR:

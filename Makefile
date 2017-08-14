@@ -26,11 +26,11 @@ scheduler.o : scheduler.c
 exceptions.o : exceptions.c
 	$(CC) $(CFLAGS) -o exceptions.o exceptions.c
 
-boot.o : boot.c 
+boot.o : boot.c
 	$(CC) $(CFLAGS) -o boot.o boot.c
 
-p2test.o : p2ex.c
-	$(CC) $(CFLAGS) -o p2test.o p2ex.c
+p2test.o : p2test.c
+	$(CC) $(CFLAGS) -o p2test.o p2test.c
 
 clean:
 	rm -rf *.o mikaboo
