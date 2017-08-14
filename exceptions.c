@@ -101,10 +101,13 @@ void put_thread_sleep(struct tcb_t* t){
 	if(thread_in_queue(&ready_queue,t)){
 		thread_outqueue(t);
 		thread_enqueue(t,&wait_queue);
+		if(t==current_thread){
+			current_thread=NULL;
+		}
 		soft_block_count++;
 	}
 }
-
+unsigned int b1,b2,b3;
 
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	int msg_res;
@@ -169,7 +172,6 @@ void sys_bp_handler(){
 	uintptr_t a2 = sysbp_old->a3;
 	//salvo messaggio
 	int msg_res;
-	BA();
 	// Se l'eccezione è di tipo System call 
 	//spedire o ricevere da un morto causa un errore
 	/*if(a1!=NULL){
@@ -190,10 +192,9 @@ void sys_bp_handler(){
 	}*/
 
 	if(cause==EXC_SYSCALL){
-		BC();
+
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
-			BD();
 			switch(a0){
 				//errore
 				case 0:
@@ -205,9 +206,10 @@ void sys_bp_handler(){
 	                //a1 contiene l'indirizzo del thread destinatario
         			//a2 contiene il puntatore al messaggio
 					if(a1->t_pcb->sysMgr==current_thread){
+						BD();
 						// e' un messaggio dal sys_mgr al thread che lo ha causato
 						// non devo mandare il messaggio ma fare la seguente istruzione
-						a1->t_s.a1=current_thread->t_s.a1;
+						//a1->t_s.a1=current_thread->t_s.a1;
 						// che fa funzionare retval = SYSCALL(42, 42, 42, 42);
 
 						//e forse 
@@ -264,8 +266,9 @@ void sys_bp_handler(){
 					//check TUTTI I PUNTATORI
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sysMgr != NULL) {
+				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s));
 				    	BA();
-				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+				    	
 				    	put_thread_sleep(current_thread);
 						//msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
 						//sveglio il manager
@@ -279,7 +282,7 @@ void sys_bp_handler(){
                		  }
                		//se  hanno un program pgr adeguato
 				    else if(current_thread->t_pcb->prgMgr != NULL) {
-				    	sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
+				    	sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s));
 				    	put_thread_sleep(current_thread);
 						// msgq_add(current_thread,current_thread->t_pcb->prgMgr,(unsigned int)&(current_thread->t_s.CP15_Cause));
 						// //sveglio il manager

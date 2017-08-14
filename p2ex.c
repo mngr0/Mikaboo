@@ -190,31 +190,35 @@ void p5m(void) {
         msgsend(sender, NULL);
     }
 }
-
+unsigned int aaaa1;
+state_t* astate1;
 void p5s(void) {
     uintptr_t retval;
     struct tcb_t* sender;
     state_t* state;
-    AA();
+   
     for (;;) {
         sender = msgrecv(NULL, &state);
-        AA();
+        AD();
         switch (state->a1) {
             case 42:
                 AB();
-                retval = 42;
+                aaaa1=retval = 42;
                 break;
             case 3:
                 AC();
-                retval = 0;
+                aaaa1=retval = 0;
                 break;
             default:
                 AD();
-                retval = -1;
+                aaaa1=retval = -1;
                 break;
         }
         state->a1 = retval;
+        AD();
+        astate1=state;
         msgsend(sender, NULL);
+        AD();
     }
 }
 
