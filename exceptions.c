@@ -12,6 +12,11 @@ state_t *tlb_old   = (state_t*) TLB_OLDAREA;
 state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
 state_t *sysbp_old   = (state_t*) SYSBK_OLDAREA;
 
+
+void BA(){}
+void BB(){}
+void BC(){}
+void BD(){}
 void save_state(state_t *from, state_t *to){
 	to->a1                  = from->a1;
 	to->a2                  = from->a2;
@@ -129,8 +134,28 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 
 void sys_recv_msg(){}
 
+void check_thread_alive(struct tcb_t * t,int cause){
+	if(t!=NULL){
+		if(t->t_status == T_STATUS_NONE){
+			switch(cause){
+				case SYS_SEND:
+					err_numb=ERR_SEND_TO_DEAD;
+					break;
+				case SYS_RECV:
+					err_numb=ERR_RECV_FROM_DEAD;
+					break;
+				default:
+					break;
+			}
+			//gestire err No
+			scheduler();
+		}
+	}
+}
 
 
+
+struct tcb_t * a1;
 //gestione system calle breaking point
 void sys_bp_handler(){
 	//salvo lo stato del thread corrente
@@ -139,13 +164,15 @@ void sys_bp_handler(){
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
 
 	unsigned int a0 = sysbp_old->a1;
-	struct tcb_t * a1 =(struct tcb_t *) sysbp_old->a2;
+	//struct tcb_t *
+	a1 =(struct tcb_t *) sysbp_old->a2;
 	uintptr_t a2 = sysbp_old->a3;
 	//salvo messaggio
 	int msg_res;
+	BA();
 	// Se l'eccezione è di tipo System call 
 	//spedire o ricevere da un morto causa un errore
-	if(a1!=NULL){
+	/*if(a1!=NULL){
 		if(a1->t_status == T_STATUS_NONE){
 			switch(a0){
 				case SYS_SEND:
@@ -160,16 +187,20 @@ void sys_bp_handler(){
 			//gestire err No
 			scheduler();
 		}
-	}
+	}*/
+
 	if(cause==EXC_SYSCALL){
+		BC();
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
+			BD();
 			switch(a0){
 				//errore
 				case 0:
 					PANIC();
 				//devo inviare un messaggio
 				case SYS_SEND:
+					check_thread_alive(a1,SYS_SEND);
 					//a0 contiene la costante 1 (messaggio inviato)
 	                //a1 contiene l'indirizzo del thread destinatario
         			//a2 contiene il puntatore al messaggio
@@ -197,7 +228,7 @@ void sys_bp_handler(){
 				break;
 				//devo ricevere un messaggio
 				case SYS_RECV:
-
+					check_thread_alive(a1,SYS_RECV);
 					//a0 contiene costante 2
 					//a1 contiene l'indirizzo del mittente(null==tutti)
 					//a2 contiene puntatore al campo dove regitrare il messaggio(NULL== non registrare)
@@ -233,6 +264,7 @@ void sys_bp_handler(){
 					//check TUTTI I PUNTATORI
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sysMgr != NULL) {
+				    	BA();
 				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));
 				    	put_thread_sleep(current_thread);
 						//msgq_add(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s.CP15_Cause));

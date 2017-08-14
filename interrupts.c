@@ -10,8 +10,7 @@
 #include "nucleus.h"
 //non so perchè debba stare qua
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
-void BA(){}
-void BB(){}
+
 //calcola la giusta lista di attesa per il dato device, e ne restituisce un puntatore
 struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
 	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];

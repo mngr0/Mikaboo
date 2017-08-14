@@ -7,8 +7,6 @@
 
 //void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
 //}
-void CA(){}
-
 
 void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;

@@ -42,14 +42,10 @@ void tist() {
 		// *(base) = 2 | (((memaddr) 't') << 8);
 	}
 }
-void ADHERE(){}
-void AEHERE(){}
-char ot,ut;
-char* or, *ur;
 
 void tust() {
-	ut= 'z';
-	ur="d";
+	char ut= 'z';
+	char *ur="d";
 	memaddr * base = (memaddr *) (TERM0ADDR);
 	while (1){
 		msgsend(ttost, &ut);
@@ -59,19 +55,17 @@ void tust() {
 		}
 
 		msgrecv(ttost, &ur);
-		ADHERE();
 		 *(base) = 2 | (((memaddr) *ur) << 8);
 		//do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*ur << 8));
 	}
 }
 
 void tost() {
-	ot= 'A';
-	or="P";
+	char ot= 'A';
+	char *or="P";
 	memaddr *base = (memaddr *) (TERM0ADDR);
 	while(1){
 		msgrecv(thread_test, &or);
-		AEHERE();
 		//do_terminal_io(TERM0ADDR, DEV_TTRS_C_TRSMCHAR | (*or << 8));
 		 *(base) = 2 | (((memaddr) *or) << 8);
 		msgsend(thread_test, &ot);
@@ -85,7 +79,7 @@ void tost() {
 
 //Boot del nostro programma
 int main() {
-	MGRMGR=1;
+	//MGRMGR=1;
 	init_dev_ctrl();
 	current_thread=NULL;
 	//Inizializzo liste 

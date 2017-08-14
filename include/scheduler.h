@@ -20,7 +20,6 @@ struct list_head wait_pseudo_clock_queue;
 struct list_head device_list[DEV_USED_INTS*(DEV_PER_INT+1)];
 //+1 perche i terminali contano doppio, hanno sia tx che rx
 
-
 //funzioni
 void init_dev_ctrl();
 int timer(unsigned int TIMER_TYPE);
