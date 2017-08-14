@@ -1,3 +1,10 @@
+void AA(){}
+void AB(){}
+void AC(){}
+void AD(){}
+void AE(){}
+void AF(){}
+void AG(){}
 /*
  * Copyright (C) 2017 Renzo Davoli
  *
@@ -23,15 +30,10 @@
 #include "nucleus.h"
 
 #define QPAGE FRAME_SIZE
+#define TERM0ADDR               0x24C
 
-struct tcb_t* printid;
-void AA(){}
-void AB(){}
-void AC(){}
-void AD(){}
-void AE(){}
-void AF(){}
-void AG(){}
+static struct tcb_t* printid;
+
 static void ttyprintstring(devaddr device, char* s) {
     uintptr_t status;
 
@@ -100,20 +102,57 @@ uintptr_t p5sys = 0;
 uintptr_t p5send = 0;
 
 void test(void) {
-    ttyprintstring(TERM0ADDR, "starting...\n");
+    
+    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
     STST(&tmpstate);
     stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) tty0out_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid = create_thread(&tmpstate);
-    tty0print("first msg\n");
+    tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
     testt = get_mythreadid();
 
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
-    tty0print("critical section\n");
+    tty0print("NUCLEUS: critical section thread started\n");
+
+    CSIN();
+    tmpstate.sp = (stackalloc -= QPAGE);
+    CSOUT;
+    tmpstate.pc = (memaddr) p2;
+    p2t = create_process(&tmpstate);
+    msgsend(p2t, SYNCCODE);
+    msgrecv(p2t, NULL);
+
+    tty0print("p2 completed\n");
+
+    CSIN();
+    tmpstate.sp = (stackalloc -= QPAGE);
+    CSOUT;
+    tmpstate.pc = (memaddr) p3;
+    p3t = create_process(&tmpstate);
+    msgrecv(p3t, NULL);
+
+    tty0print("p3 completed\n");
+
+    CSIN();
+    tmpstate.sp = (stackalloc -= QPAGE);
+    CSOUT;
+    tmpstate.pc = (memaddr) p4;
+    p4t = create_process(&tmpstate);
+    msgsend(p4t, NULL);
+    msgrecv(p4t, NULL);
+    msgsend(p4t, tmpstate.sp);
+    msgrecv(p4t, NULL);
+
+    if (geterrno() == 0)
+        panic("p1 wrong errno: recv from p4 should abort, p4 terminated\n");
+    else {
+        tty0print("p4 errno ok\n");
+    }
+    tty0print("p4 completed\n");
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -128,7 +167,6 @@ void test(void) {
 
     if (p5send != 2) tty0print("p5a usermode msg priv kill is ok\n");
     else panic("p5a usermode msg priv kill error\n");
-
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -147,10 +185,126 @@ void test(void) {
     tty0print("p7 completed\n");
     //check total number of thread
 
+    CSIN();
+    tmpstate.sp = (stackalloc -= QPAGE);
+    CSOUT;
+    tmpstate.pc = (memaddr) p8;
+    p8t = create_process(&tmpstate);
+    msgrecv(p8t, NULL);
+    tty0print("p8 completed\n");
+
     tty0print("IT'S ALIVE! IT'S ALIVE! THE KERNEL IS ALIVE!\n");
     HALT();
 }
 
+#define MINLOOPTIME             100
+#define LOOPNUM                 100
+
+void p2(void) {
+    struct tcb_t* p1t;
+    uintptr_t value;
+    cputime cpu_t1, cpu_t2;
+    int i;
+
+    tty0print("p2 started\n");
+
+    /* test: GET_MYTHREADID GET_PROCESSID GET_PARENTPROCID */
+    if (get_mythreadid() != p2t)
+        panic("p2 get_mythreadid: wrong pid returned\n");
+
+    p1t = msgrecv(NULL, &value);
+    if (value != SYNCCODE)
+        panic("p2 recv: got the wrong value\n");
+    if (p1t != testt)
+        panic("p2 recv: got the wrong sender\n");
+    if (get_processid(p1t) != get_parentprocid(get_processid(get_mythreadid())))
+        panic("p2 get_parentprocid get_processid error\n");
+
+    /* test: GET_CPUTIME */
+
+    cpu_t1 = getcputime();
+    /* delay for several milliseconds */
+    for (i = 1; i < LOOPNUM; i++);
+
+    cpu_t2 = getcputime();
+
+    if ((cpu_t2 - cpu_t1) >= MINLOOPTIME)
+        tty0print("p2 GET_CPUTIME sounds okay\n");
+    else
+        panic("p2 GETCPUTIME sounds faulty\n");
+
+    msgsend(p1t, NULL);
+    msgrecv(p1t, NULL);
+
+    terminate_thread();
+
+    panic("p2 survived TERMINATE_THREAD\n");
+}
+
+#define PSEUDOCLOCK 100000
+#define NWAIT 10
+
+void p3(void) {
+    tty0print("p3 started\n");
+
+    cputime time1, time2;
+    int i;
+    time1 = getTODLO();
+    for (i = 0; i < NWAIT; i++) {
+        waitforclock();
+    }
+    time2 = getTODLO();
+
+    if ((time2 - time1) < (PSEUDOCLOCK * (NWAIT - 1))) {
+        panic("WAITCLOCK too small\n");
+    } else if ((time2 - time1) > (PSEUDOCLOCK * (NWAIT + 1))) {
+        panic("WAITCLOCK too big\n");
+    } else {
+        tty0print("WAITCLOCK OK\n");
+    }
+
+    msgsend(testt, "NULL");
+
+    terminate_process();
+
+    panic("p3 survived TERMINATE_PROCESS\n");
+}
+
+void p4(void) {
+    static int p4inc = 1;
+    struct tcb_t* parent;
+    struct tcb_t* child;
+    state_t p4childstate;
+
+    switch (p4inc) {
+        case 1:
+            tty0print("first incarnation of p4 starts\n");
+            break;
+        case 2:
+            tty0print("second incarnation of p4 starts\n");
+            break;
+    }
+    p4inc++;
+    parent = msgrecv(NULL, NULL);
+    msgsend(parent, NULL);
+
+    msgrecv(NULL, NULL);
+    /* only the first incarnation reaches this point */
+
+    STST(&p4childstate);
+    CSIN();
+    p4childstate.sp = (stackalloc -= QPAGE);
+    CSOUT;
+    p4childstate.pc = (memaddr) p4;
+
+    child = create_process(&p4childstate);
+    msgsend(child, NULL);
+    msgrecv(child, NULL);
+
+    terminate_process();
+
+    panic("p4 survived TERMINATE_PROCESS\n");
+}
 
 void p5a();
 
@@ -190,35 +344,26 @@ void p5m(void) {
         msgsend(sender, NULL);
     }
 }
-unsigned int aaaa1;
-state_t* astate1;
+
 void p5s(void) {
     uintptr_t retval;
     struct tcb_t* sender;
     state_t* state;
-   
     for (;;) {
         sender = msgrecv(NULL, &state);
-        astate1=state;
-        AA();
         switch (state->a1) {
             case 42:
-                AB();
-                aaaa1=retval = 42;
+                retval = 42;
                 break;
             case 3:
-                AC();
-                aaaa1=retval = 0;
+                retval = 0;
                 break;
             default:
-                AD();
-                aaaa1=retval = -1;
+                retval = -1;
                 break;
         }
         state->a1 = retval;
-        AE();
         msgsend(sender, NULL);
-        AB();
     }
 }
 
@@ -231,39 +376,35 @@ void p5(void) {
     tty0print("p5 started\n");
 
     STST(&mgrstate);
-    AG();
     msgrecv(NULL, &mgrstate.pc);
-    AG();
-    /*
     CSIN();
     mgrstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     mgrstate.pc = (memaddr) p5p;
     setpgmmgr(create_thread(&mgrstate));
+
     CSIN();
     mgrstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     mgrstate.pc = (memaddr) p5m;
     settlbmgr(create_thread(&mgrstate));
-    */
+
     CSIN();
     mgrstate.sp = (stackalloc -= QPAGE);
     CSOUT;
     mgrstate.pc = (memaddr) p5s;
+
     setsysmgr(create_thread(&mgrstate));
+
     /* this should me handled by p5s */
-    AE();
+
     retval = SYSCALL(42, 42, 42, 42);
-    AF();
-    AF();
-    AF();
-    AF();
     if (retval == 42)
         tty0print("p5 syscall passup okay\n");
     else
         panic("p5 syscall passup error\n");
 
-    //*((memaddr*) BADADDR) = 0;
+    *((memaddr*) BADADDR) = 0;
 
     panic("p5 survived mem error");
 }

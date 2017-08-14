@@ -91,8 +91,6 @@ void wake_me_up(struct tcb_t* sleeper){
 		thread_enqueue(sleeper,&ready_queue);
 		
 		sleeper->t_status=T_STATUS_READY;
-		//faccio in modo che non rientri nel codice della sys call
-		//TODO questa operazione e' da avere qui dentro? (non verrra' sempre chiamato da una syscall)
 		
 }
 
