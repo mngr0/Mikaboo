@@ -25,7 +25,7 @@ void int_handler(){
 	}
 	//guardo la causa dell' interrupt
 	int cause = getCAUSE();
-
+//CHECK HERE
 	// Se la causa dell'interrupt è la linea 0 
 	if(CAUSE_IP_GET(cause, IL_IPI)){
 		line_handler(IL_IPI);
@@ -96,7 +96,6 @@ void timer_handler(){
 void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
 	(*command_reg) = DEV_C_ACK;
 	struct list_head* dev=select_io_queue( dev_type,dev_numb);
-	//q2=&device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
 	struct tcb_t * thread_dev=thread_dequeue(dev);
 	sys_send_msg(SSI,thread_dev,status);
 }

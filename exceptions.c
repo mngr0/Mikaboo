@@ -13,11 +13,6 @@ state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
 state_t *sysbp_old   = (state_t*) SYSBK_OLDAREA;
 
 
-void BA(){}
-void BB(){}
-void BC(){}
-void BD(){}
-void BE(){}
 void save_state(state_t *from, state_t *to){
 	to->a1                  = from->a1;
 	to->a2                  = from->a2;
@@ -82,9 +77,9 @@ void put_thread_sleep(struct tcb_t* t){
 
 void tlb_handler(){
 	if(current_thread!= NULL){
-		if(current_thread->t_pcb->tlbMgr!=NULL){
+		if(current_thread->t_pcb->tlb_mgr!=NULL){
 			save_state(tlb_old, &(current_thread->t_s));
-			sys_send_msg(current_thread,current_thread->t_pcb->tlbMgr,(uintptr_t)&(current_thread->t_s));
+			sys_send_msg(current_thread,current_thread->t_pcb->tlb_mgr,(uintptr_t)&(current_thread->t_s));
 			put_thread_sleep(current_thread);	
 		}
         else{
@@ -98,9 +93,9 @@ void tlb_handler(){
 void pgm_handler(){
     //gestione tempi
     if(current_thread != NULL){
-        if(current_thread->t_pcb->prgMgr!=NULL){
+        if(current_thread->t_pcb->prg_mgr!=NULL){
             save_state(pgmtrap_old, &current_thread->t_s);
-            sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)pgmtrap_old);  
+            sys_send_msg(current_thread,current_thread->t_pcb->prg_mgr,(uintptr_t)pgmtrap_old);  
             put_thread_sleep(current_thread);
         }
         else{
@@ -113,39 +108,35 @@ void pgm_handler(){
 
 void wake_me_up(struct tcb_t* sleeper){
 		thread_outqueue(sleeper);
-		thread_enqueue(sleeper,&ready_queue);
-		
+		thread_enqueue(sleeper,&ready_queue);		
 		sleeper->t_status=T_STATUS_READY;
-		//faccio in modo che non rientri nel codice della sys call
-		//TODO questa operazione e' da avere qui dentro? (non verrra' sempre chiamato da una syscall)
 		
 }
 
 
-unsigned int b1,b2,b3;
-
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
-	int msg_res;
+	
 	//se il destinatario è in attesa proprio di questo messaggio
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
-		//lo sveglio
+		
 		* (unsigned int *)receiver->t_s.a3=msg;
 		receiver->t_s.a1=(unsigned int)sender;
-
+		//lo sveglio
 		wake_me_up(receiver);
 		receiver->t_s.pc += WORD_SIZE;
-		//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
-		//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
-	
+		//CHECK
+
 		//if (sender!=SSI)
 		//	sender->t_s.a1=0;
 		soft_block_count--;
 	}
 	//altrimenti lo incodo normalmente
 	else{
+		int msg_res;
 		msg_res=msgq_add(sender,receiver,msg);
 		//coda piena, il messaggio non è stato inviato, la msgsend ritornerà -1 CHECK
 		if(msg_res==-1){
+			//CHECK
 			//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
 			//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
 			//ERRNO!!!!!
@@ -157,6 +148,7 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 
 void sys_recv_msg(){}
 
+//controlla che il thread al quale si invia/si riceve un messaggio sia vivo
 void check_thread_alive(struct tcb_t * t,int cause){
 	if(t!=NULL){
 		if(t->t_status == T_STATUS_NONE){
@@ -177,18 +169,14 @@ void check_thread_alive(struct tcb_t * t,int cause){
 }
 
 
-state_t* aastate1;
-struct tcb_t * a1;
 //gestione system calle breaking point
 void sys_bp_handler(){
 	//salvo lo stato del thread corrente
 	save_state(sysbp_old, &current_thread->t_s);
-	//controllo perchè è stato chiamato il sys_bp_handler
+	//mi salvo i vari campi che mi serviranno
 	unsigned int cause = CAUSE_EXCCODE_GET(sysbp_old->CP15_Cause);
-
 	unsigned int a0 = sysbp_old->a1;
-	//struct tcb_t *
-	a1 =(struct tcb_t *) sysbp_old->a2;
+	struct tcb_t* a1 =(struct tcb_t *) sysbp_old->a2;
 	uintptr_t a2 = sysbp_old->a3;
 	//salvo messaggio
 	int msg_res;
@@ -203,39 +191,26 @@ void sys_bp_handler(){
 					PANIC();
 				//devo inviare un messaggio
 				case SYS_SEND:
+					//controllo se è una send ad un morto
 					check_thread_alive(a1,SYS_SEND);
-					//a0 contiene la costante 1 (messaggio inviato)
-	                //a1 contiene l'indirizzo del thread destinatario
-        			//a2 contiene il puntatore al messaggio
-					if(a1->t_pcb->sysMgr==current_thread){
+					//a0 contiene la costante 1 (messaggio inviato) a1 contiene l'indirizzo del thread destinatario a2 contiene il puntatore al messaggio
+					if(a1->t_pcb->sys_mgr==current_thread ||a1->t_pcb->prg_mgr==current_thread || a1->t_pcb->tlb_mgr==current_thread ){
 						wake_me_up(a1);
-						// e' un messaggio dal sys_mgr al thread che lo ha causato
-						// non devo mandare il messaggio ma fare la seguente istruzione
-						//a1->t_s.a1=current_thread->t_s.a1;
-						// che fa funzionare retval = SYSCALL(42, 42, 42, 42);
-
-						//e forse 
-						//a1->t_s.pc-=WORD_SIZE
-
-					}else if(a1->t_pcb->prgMgr==current_thread){
-						wake_me_up(a1);
-					}else if(a1->t_pcb->tlbMgr==current_thread){
-						wake_me_up(a1);
-					}else{
-
+					}
+					else{
 						//faccio la send
 						sys_send_msg(current_thread,a1,a2);
 					}
 					// Evito che rientri nel codice della syscall
 					current_thread->t_s.pc += WORD_SIZE;
+					//carico lo stato
 					LDST(&current_thread->t_s);
 				break;
 				//devo ricevere un messaggio
 				case SYS_RECV:
+					//controllo se è una recv da un morto
 					check_thread_alive(a1,SYS_RECV);
-					//a0 contiene costante 2
-					//a1 contiene l'indirizzo del mittente(null==tutti)
-					//a2 contiene puntatore al campo dove regitrare il messaggio(NULL== non registrare)
+					//a0 contiene costante 2 a1 contiene l'indirizzo del mittente(null==tutti) a2 contiene puntatore al campo dove regitrare il messaggio(NULL== non registrare)
 					msg_res=msgq_get(&a1,current_thread,(uintptr_t *)a2);
 					//non c'è ancora il messaggio
 					if (msg_res==-1){
@@ -258,23 +233,20 @@ void sys_bp_handler(){
 						//la msgrecv ritornerà un puntatore al mittente
 						current_thread->t_s.a1=(unsigned int)a1;
 						// Evito che rientri nel codice della syscall
-						
 						current_thread->t_s.pc += WORD_SIZE;
 						//carico il thread
 						LDST(&current_thread->t_s);
 					}
 					break;
 				default:
-
-					//check TUTTI I PUNTATORI
 				    //se hanno un sysmgr adeguato
-				    if(current_thread->t_pcb->sysMgr != NULL) {
-				    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s));
+				    if(current_thread->t_pcb->sys_mgr != NULL) {
+				    	sys_send_msg(current_thread,current_thread->t_pcb->sys_mgr,(uintptr_t)&(current_thread->t_s));
 				    	put_thread_sleep(current_thread);
                		  }
                		//se  hanno un program pgr adeguato
-				    else if(current_thread->t_pcb->prgMgr != NULL) {
-				    	sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s));
+				    else if(current_thread->t_pcb->prg_mgr != NULL) {
+				    	sys_send_msg(current_thread,current_thread->t_pcb->prg_mgr,(uintptr_t)&(current_thread->t_s));
 				    	put_thread_sleep(current_thread);
                		}
                		//lo uccido
@@ -284,28 +256,28 @@ void sys_bp_handler(){
 					}
 				break; 
 			}
+		}
 		// Se invece è in user mode 
-		}else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
-		    BA();
+		else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
+			//se è una send o una recv
 		    if((a0==SYS_RECV)||(a0==SYS_SEND)){
-	            if(current_thread->t_pcb->prgMgr != NULL) {
+	            if(current_thread->t_pcb->prg_mgr != NULL) {
 	                save_state(sysbp_old,pgmtrap_old);
 	                pgmtrap_old->CP15_Cause = CAUSE_EXCCODE_SET(pgmtrap_old->CP15_Cause, EXC_RESERVEDINSTR);
 	                pgm_handler();
-	                //sys_send_msg(current_thread,current_thread->t_pcb->prgMgr,(uintptr_t)&(current_thread->t_s));
-	                //put_thread_sleep(current_thread);
 	            }
 	            else {
 	                ssi_terminate_thread(current_thread);
 	                current_thread =NULL;
 	            }
-
-
-	        }else if(a0<MAX_REQUEST_VALUE){
-				if(current_thread->t_pcb->sysMgr != NULL) {
-			    	sys_send_msg(current_thread,current_thread->t_pcb->sysMgr,(uintptr_t)&(current_thread->t_s));
+	        }
+	         //se è compresa tra i servizi dichiarati   
+	        else if(a0<MAX_REQUEST_VALUE){
+				if(current_thread->t_pcb->sys_mgr != NULL) {
+			    	sys_send_msg(current_thread,current_thread->t_pcb->sys_mgr,(uintptr_t)&(current_thread->t_s));
 			    	put_thread_sleep(current_thread);
 	       		}
+	       		//lo uccido
 			    else {
 		            ssi_terminate_thread(current_thread);
 		            current_thread =NULL;

@@ -5,17 +5,20 @@
 #include "exceptions.h"
 #include "interrupts.h"
 
-//void SSIRequest(unsigned int service, unsigned int payload, unsigned int *reply) { //qui modificare con le macro
-//}
-
+//controlla se ci sono thread nella wait queue che vogliono ricevere un messaggio da uno appena stato ucciso
 void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;
 	for_each_thread_in_q(t_temp,&wait_queue){
 		if(t_temp->t_wait4sender==t_victim  ){
+			//modifico la variabile globale per gli error numb
 			err_numb=ERR_RECV_FROM_DEAD;
+			//lo sveglio
 			wake_me_up(t_temp);
-			*(unsigned int*)t_temp->t_s.a3=NULL;
+			//non è importante il payload del messaggio
+			*(unsigned int*)t_temp->t_s.a3= (unsigned int)NULL;
+			//messaggio lo ha ricevuto da SSI
 			t_temp->t_s.a1=(unsigned int)SSI;
+			//vado solita istruzione dopo
 			t_temp->t_s.pc+=WORD_SIZE;
 			break;
 		}
@@ -24,24 +27,31 @@ void check_death(struct tcb_t* t_victim){
 
 //uccide thread
 void exterminate_thread(struct pcb_t * victim){
+	//elimino ogni thread del processo
     while (!list_empty(&victim->p_threads)){
-
+    	//controllo che non ci siano figli che aspettano un messaggio da un defunto
         check_death(proc_firstthread(victim));
+        //aggiorno il softblockcount
         if(thread_in_queue(&ready_queue,proc_firstthread(victim))){
           soft_block_count--;  
         }
+        //tolgo il processo da qualsiasi lista si trova
         thread_outqueue(proc_firstthread(victim));
-        thread_count--;
         thread_free(proc_firstthread(victim));
+        //aggiorno il numero di thread
+        thread_count--;
         
     }
 }
 //uccide un processo e tutta la sua stirpe
 void exterminate_proc(struct pcb_t * victim){
+	//uccido tutti i suoi thread
 	exterminate_thread(victim);
 	struct pcb_t * temp;
+	//per direttive iniziali, non possono esistere figli senza il padre, l'unico accettato è il root
 	while (!list_empty(&victim->p_children)){
 		temp=proc_firstchild(victim);
+		//mi richiamo ricorsivamente sui figli
 		exterminate_proc(temp);
 	}
 	proc_delete(victim);
@@ -54,20 +64,26 @@ unsigned int ssi_terminate_process(struct tcb_t* sender){
 //elimina un thread e in caso che non ci siano più thread di quel processo, uccide la sua stirpe
 unsigned int ssi_terminate_thread(struct tcb_t* sender){
 	struct pcb_t* parent=sender->t_pcb;
+	//controllo che un morto non aspetti un messaggio da un morto
 	check_death(sender);
+	//lo tolgo da qualsiasi coda si trovi
 	thread_outqueue(sender);
 	thread_free(sender);
+	//se non ci sono altri thread, allora elimino pure il processo che ha generato il thread
 	if(list_empty(&parent->p_threads)){
 		exterminate_proc(parent);
 	}
+	//aggiorno numero thread
 	thread_count--;
 	return FALSE;
 }
 //gestione creazione processo e relativo thread
 void ssi_create_process(state_t* state,struct tcb_t* sender, uintptr_t* reply){
+	//creo processo e thread
 	struct pcb_t* new_proc=proc_alloc(sender->t_pcb);
 	struct tcb_t* new_thread= thread_alloc(new_proc);
 	if(new_thread!=NULL){
+		//salvo lo stato passato
 		save_state(state,&new_thread->t_s);
 		thread_count++;
 		thread_enqueue(new_thread,&ready_queue);
@@ -76,9 +92,10 @@ void ssi_create_process(state_t* state,struct tcb_t* sender, uintptr_t* reply){
 }
 //gestione creazione thread
 void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply){
+	//creo thread
 	struct tcb_t* new= thread_alloc(sender->t_pcb);
-	//struct tcb_t * Ashow=new; //NON VEDO L'UTILITA DI QUESTO, PER ORA E' COMMENTATO
 	if(new!=NULL){
+		//salvo lo stato passato
 		save_state(state,&new->t_s);
 		thread_count++;
 		thread_enqueue(new,&ready_queue);
@@ -87,13 +104,12 @@ void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply){
 }
 //assegno il prg mgr o killo il thread
 unsigned int ssi_prg_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply) {
-
-    if (sender->t_pcb->prgMgr != NULL || mgr == NULL) {
+	//se aveva già un manager
+    if (sender->t_pcb->prg_mgr != NULL || mgr == NULL) {
        ssi_terminate_thread(sender);
         return FALSE;
     } else {
-
-        sender->t_pcb->prgMgr = mgr;
+        sender->t_pcb->prg_mgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;
     }
@@ -101,13 +117,13 @@ unsigned int ssi_prg_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t*
 
 //assegno il tlb mgr o killo il thread
 unsigned int ssi_tlb_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t* reply) {
-
-    if (sender->t_pcb->tlbMgr != NULL || mgr == NULL) {
+//se aveva già un manager
+    if (sender->t_pcb->tlb_mgr != NULL || mgr == NULL) {
      ssi_terminate_thread(sender);
         return FALSE;
     } else {
 
-        sender->t_pcb->tlbMgr = mgr;
+        sender->t_pcb->tlb_mgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;
     }
@@ -115,11 +131,12 @@ unsigned int ssi_tlb_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t*
 
 //assegno il sys mgr o killo il thread
 unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* reply) {
-    if (sender->t_pcb->sysMgr != NULL || mgr == NULL){
+    //se aveva già un manager
+    if (sender->t_pcb->sys_mgr != NULL || mgr == NULL){
      ssi_terminate_thread(sender);
         return FALSE;
     } else {
-        sender->t_pcb->sysMgr = mgr;
+        sender->t_pcb->sys_mgr = mgr;
 
         *reply=(unsigned int) NULL;
         return TRUE;
@@ -163,11 +180,20 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 
 
 //ritorno il thread che ha fatto la richiesta
-unsigned int ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){
+void ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply ){
 	*reply =(unsigned int)  sender;
-	return TRUE;
 
 }
+//ritorno il processo padre del thread
+void ssi_get_parentprocid(struct pcb_t* sender, uintptr_t* reply ){
+	*reply =(unsigned int)  sender;
+
+}
+//ritorno il processo del thread
+void ssi_get_processid(struct pcb_t* sender, uintptr_t* reply ){
+	*reply =(unsigned int)  sender;
+}
+//ritorno l'error number
 void ssi_get_erro(uintptr_t* reply){
 	*reply=err_numb;
 	err_numb=NO_ERR;
@@ -175,15 +201,13 @@ void ssi_get_erro(uintptr_t* reply){
 
 //funzione principale dell SSI, controlla che il servizio sia un valore corretto e chiama la funzione corrispondente
 unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t* reply) {
-	unsigned int* service=msg_ssi;
-
-
-   if (*service < 0 || *service > MAX_REQUEST_VALUE)
-   		//uccido chiamante
-        ssi_terminate_thread(sender);
-
-	switch (*service) {
-        // valori della richiesta 
+	//controllo se non è una chiamata accettabile
+   if (*msg_ssi < 0 || *msg_ssi > MAX_REQUEST_VALUE){
+   	    ssi_terminate_thread(sender);
+    	//CHECK non va settato a null current thread vero?
+   }
+	switch (*msg_ssi) {
+		//in REPLY salviamo la risposta ottenuta
 		case GET_ERRNO:
 			ssi_get_erro(reply);
 			break;
@@ -208,29 +232,24 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 		case SETSYSMGR:
 			return ssi_sys_managing((struct tcb_t*)*(msg_ssi+1),sender,reply);
 			break;	
-
 		case GET_CPUTIME:
 			ssi_getcputime(sender,reply);
 			break;
-
 		case WAIT_FOR_CLOCK:
 			return ssi_waitforclock(sender,reply);
 			break;
-
 		case DO_IO:
-
 			return ssi_do_io(msg_ssi,sender);
 			break;
 		case GET_PROCESSID :
-			*reply =(unsigned int)( ((struct tcb_t*)*(msg_ssi+1))->t_pcb);
+			ssi_get_processid(((struct tcb_t*)*(msg_ssi+1))->t_pcb,reply);
 			break;
 		case GET_MYTHREADID:
-			*reply =(unsigned int)  sender;
+			ssi_get_mythreadid(sender,reply);
 			break;
 		case GET_PARENTPROCID: 
-			*reply =(unsigned int) ( ((struct pcb_t*)*(msg_ssi+1))->p_parent );
+			ssi_get_parentprocid(((struct pcb_t*)*(msg_ssi+1))->p_parent,reply);
 			break;
-
 	}
 	return TRUE;
 }

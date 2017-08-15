@@ -12,7 +12,7 @@ struct pcb_t {
 
 	struct list_head p_children; /* list of children (hierarchy of processes) */
 	struct list_head p_siblings; /* link the other siblings (children of p_parent) */
-	struct tcb_t *prgMgr, *sysMgr,*tlbMgr;
+	struct tcb_t *prg_mgr, *sys_mgr,*tlb_mgr;
 };
 
 #define T_STATUS_NONE  0    /* unused thread descriptor */
@@ -93,8 +93,8 @@ struct tcb_t *thread_dequeue(struct list_head *queue);
 static inline void thread_outqueue(struct tcb_t *this) {
 	list_del(&this->t_sched);
 }
-//toglie il thread this da head, restituisce this se esiste o null altrimenti
-struct tcb_t *out_thread(struct list_head *head, struct tcb_t* this);
+//1 se il thread è presente nella coda, 0 altrimenti
+int thread_in_queue(struct list_head *head, struct tcb_t* this);
 
 #define for_each_thread_in_q(pos, queue) \
 	list_for_each_entry(pos, queue, t_sched)

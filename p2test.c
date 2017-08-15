@@ -108,7 +108,7 @@ void test(void) {
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
     tty0print("NUCLEUS: critical section thread started\n");
-    /*
+    
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -144,7 +144,7 @@ void test(void) {
         tty0print("p4 errno ok\n");
     }
     tty0print("p4 completed\n");
-    */
+    
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;

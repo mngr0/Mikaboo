@@ -117,6 +117,15 @@ void test(void) {
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
   //  tty0print("NUCLEUS: critical section thread started\n");
+    CSIN();
+    tmpstate.sp = (stackalloc -= QPAGE);
+    CSOUT;
+    tmpstate.pc = (memaddr) p2;
+    p2t = create_process(&tmpstate);
+    msgsend(p2t, SYNCCODE);
+    msgrecv(p2t, NULL);
+
+    tty0print("p2 completed\n");
 
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -147,7 +156,49 @@ void test(void) {
     HALT();
 }
 
+#define MINLOOPTIME             100
+#define LOOPNUM                 100
 
+void p2(void) {
+    struct tcb_t* p1t;
+    uintptr_t value;
+    cputime cpu_t1, cpu_t2;
+    int i;
+
+    tty0print("p2 started\n");
+
+    /* test: GET_MYTHREADID GET_PROCESSID GET_PARENTPROCID */
+    if (get_mythreadid() != p2t)
+        panic("p2 get_mythreadid: wrong pid returned\n");
+
+    p1t = msgrecv(NULL, &value);
+    if (value != SYNCCODE)
+        panic("p2 recv: got the wrong value\n");
+    if (p1t != testt)
+        panic("p2 recv: got the wrong sender\n");
+    if (get_processid(p1t) != get_parentprocid(get_processid(get_mythreadid())))
+        panic("p2 get_parentprocid get_processid error\n");
+
+    /* test: GET_CPUTIME */
+
+    cpu_t1 = getcputime();
+    /* delay for several milliseconds */
+    for (i = 1; i < LOOPNUM; i++);
+
+    cpu_t2 = getcputime();
+
+    if ((cpu_t2 - cpu_t1) >= MINLOOPTIME)
+        tty0print("p2 GET_CPUTIME sounds okay\n");
+    else
+        panic("p2 GETCPUTIME sounds faulty\n");
+
+    msgsend(p1t, NULL);
+    msgrecv(p1t, NULL);
+
+    terminate_thread();
+
+    panic("p2 survived TERMINATE_THREAD\n");
+}
 
 #define BADADDR 0xFFFFFFFF
 
