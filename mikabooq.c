@@ -152,7 +152,7 @@ int thread_free(struct tcb_t *oldthread){
 		INIT_LIST_HEAD(&oldthread->t_next);
 		list_add(&oldthread->t_next,&free_thread);
 		oldthread->t_pcb=NULL;
-		//reset_state(&oldthread->t_s);
+		reset_state(&oldthread->t_s);
 		oldthread->t_status= T_STATUS_NONE;
 		oldthread->cpu_time=0;
 		oldthread->err_numb=NO_ERR;
@@ -267,17 +267,17 @@ int msgq_get(struct tcb_t **sender, struct tcb_t *destination,uintptr_t *value){
 		//caso 3
 		else{
 			struct list_head* iter;
-                        list_for_each(iter,&destination->t_msgq){ //ciclo per la ricerca
-                        	struct msg_t* tm= container_of(iter,struct msg_t,m_next);
-                        	if(*sender==tm->m_sender){
-                        		*value=tm->m_value;
-                        		list_del(&tm->m_next);
-                        		INIT_LIST_HEAD(&tm->m_next);
-                        		list_add(&tm->m_next,&free_msg);
-                        		return 0;
-                        	}
-                        }
-                        return -1;
-                    }
-                }
+            list_for_each(iter,&destination->t_msgq){ //ciclo per la ricerca
+               	struct msg_t* tm= container_of(iter,struct msg_t,m_next);
+              	if(*sender==tm->m_sender){
+               		*value=tm->m_value;
+               		list_del(&tm->m_next);
+               		INIT_LIST_HEAD(&tm->m_next);
+               		list_add(&tm->m_next,&free_msg);
+               		return 0;
+               	}
             }
+            return -1;
+        }
+    }
+}

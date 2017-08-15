@@ -37,6 +37,17 @@ void save_state(state_t *from, state_t *to){
 	to->TOD_Hi              = from->TOD_Hi;
 	to->TOD_Low             = from->TOD_Low;
 }
+/* e' carina ma piu lenta. Efficienza>all
+void save_state(state_t *from, state_t *to){
+	int i = 0;
+	// casting pointers
+	unsigned int *dest8 = (unsigned int *)to;
+	unsigned int *source8 = (unsigned int *)from;
+	for (i = 0; i < sizeof(state_t)/WORD_SIZE; i++) {
+		dest8[i] = source8[i];
+	}
+}
+*/
 //resetta tutti i campi di uno state
 void reset_state(state_t *t_s){
 	int i = 0;
@@ -115,6 +126,8 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 		//lo sveglio
 		wake_me_up(receiver);
 		receiver->t_s.pc += WORD_SIZE;
+
+
 	}
 	//altrimenti lo incodo normalmente
 	else{
