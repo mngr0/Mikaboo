@@ -4,7 +4,7 @@
 #include "scheduler.h"
 #include "exceptions.h"
 #include "interrupts.h"
-
+#include "const.h"
 //controlla se ci sono thread nella wait queue che vogliono ricevere un messaggio da uno appena stato ucciso
 void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;

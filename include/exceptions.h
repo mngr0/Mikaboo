@@ -1,9 +1,7 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
-#define NO_ERR 0
-#define ERR_SEND_TO_DEAD 1
-#define ERR_RECV_FROM_DEAD 2
+
 unsigned int err_numb;
 
 //funzioni

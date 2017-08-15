@@ -3,9 +3,7 @@
 
 #include <listx.h>
 #include "nucleus.h"
-//Tempi dei block
-#define SCHED_TIME_SLICE 5000
-#define SCHED_PSEUDO_CLOCK 100000
+
 
 //VARIABILI GLOBALI
 int thread_count;
