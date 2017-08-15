@@ -10,8 +10,8 @@ void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;
 	for_each_thread_in_q(t_temp,&wait_queue){
 		if(t_temp->t_wait4sender==t_victim  ){
-			//modifico la variabile globale per gli error numb
-			err_numb=ERR_RECV_FROM_DEAD;
+			//modifico la variabile  per gli error numb
+			t_temp->err_numb=ERR_RECV_FROM_DEAD;
 			//lo sveglio
 			wake_me_up(t_temp);
 			//non è importante il payload del messaggio
@@ -194,9 +194,8 @@ void ssi_get_processid(struct pcb_t* sender, uintptr_t* reply ){
 	*reply =(unsigned int)  sender;
 }
 //ritorno l'error number
-void ssi_get_erro(uintptr_t* reply){
-	*reply=err_numb;
-	err_numb=NO_ERR;
+void ssi_get_erro(struct tcb_t* sender,uintptr_t* reply){
+	*reply=sender->err_numb;
 }
 
 //funzione principale dell SSI, controlla che il servizio sia un valore corretto e chiama la funzione corrispondente
@@ -204,12 +203,11 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 	//controllo se non è una chiamata accettabile
    if (*msg_ssi < 0 || *msg_ssi > MAX_REQUEST_VALUE){
    	    ssi_terminate_thread(sender);
-    	//CHECK non va settato a null current thread vero?
    }
 	switch (*msg_ssi) {
 		//in REPLY salviamo la risposta ottenuta
 		case GET_ERRNO:
-			ssi_get_erro(reply);
+			ssi_get_erro(sender,reply);
 			break;
 		case CREATE_PROCESS:
 			ssi_create_process((state_t*)*(msg_ssi+1),sender,reply);

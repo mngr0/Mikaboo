@@ -21,7 +21,7 @@
 #include <libuarm.h>
 
 #include "nucleus.h"
-
+#include "p2test.h"
 #define QPAGE FRAME_SIZE
 
 static struct tcb_t* printid;

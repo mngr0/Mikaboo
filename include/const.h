@@ -8,6 +8,7 @@
 #define NO_ERR 0
 #define ERR_SEND_TO_DEAD 1
 #define ERR_RECV_FROM_DEAD 2
+#define ERR_MSQ_FULL 3
 //offset del terminale
 #define TERM_STATUS_READ   0x00000000
 #define TERM_COMMAND_READ   0x00000004

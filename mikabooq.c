@@ -87,10 +87,10 @@ int proc_delete(struct pcb_t *oldproc){
 	 	oldproc->p_parent=NULL;
 	 	return 0;
 	 }
-	}
+}
 
 
-	struct pcb_t *proc_firstchild(struct pcb_t *proc){
+struct pcb_t *proc_firstchild(struct pcb_t *proc){
 	struct pcb_t *p=container_of(proc->p_children.next,struct pcb_t,p_siblings); //ritorno il primo figlio
 	return p;
 }
@@ -132,6 +132,8 @@ struct tcb_t *thread_alloc(struct pcb_t *process){
 		INIT_LIST_HEAD(&item_libero->t_msgq);
 		item_libero->t_pcb=process;
 		item_libero->t_status= T_STATUS_READY;
+		item_libero->cpu_time=0;
+		item_libero->err_numb=NO_ERR;
 		list_add_tail(&item_libero->t_next,&process->p_threads);
 		return item_libero;
 	}
@@ -152,6 +154,8 @@ int thread_free(struct tcb_t *oldthread){
 		oldthread->t_pcb=NULL;
 		//reset_state(&oldthread->t_s);
 		oldthread->t_status= T_STATUS_NONE;
+		oldthread->cpu_time=0;
+		oldthread->err_numb=NO_ERR;
 		return 0;
 	}
 }

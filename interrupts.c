@@ -10,55 +10,49 @@
 #include "nucleus.h"
 //non so perchè debba stare qua
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
+void BP(){
 
+}
 //calcola la giusta lista di attesa per il dato device, e ne restituisce un puntatore
 struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
 	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
 }
 //gestisco gli interrupt
 void int_handler(){
-//devo ritornare all' istruzione recedente siccome gli interrupt vengono catturati dopo l' incremento del pc
+	//devo ritornare all' istruzione recedente siccome gli interrupt vengono catturati dopo l' incremento del pc
 	int_old->pc -= 4;
-
 	if(current_thread != NULL){
 		save_state(int_old, &current_thread->t_s);
 	}
 	//guardo la causa dell' interrupt
 	int cause = getCAUSE();
-//CHECK HERE
-	// Se la causa dell'interrupt è la linea 0 
-	if(CAUSE_IP_GET(cause, IL_IPI)){
-		line_handler(IL_IPI);
-	} else 
-	// linea 1 
-		if(CAUSE_IP_GET(cause, IL_CPUTIMER)){
-			line_handler(IL_CPUTIMER);
-		} else
-	//  linea 2 timer 
-		if (CAUSE_IP_GET(cause, IL_TIMER)){
-			timer_handler();
-		} else
-    // linea 3 disk 
-		if (CAUSE_IP_GET(cause, IL_DISK)){
-			device_handler(IL_DISK);
-		} else
-    // linea 4 tape
-		if (CAUSE_IP_GET(cause, IL_TAPE)){
-			device_handler(IL_TAPE);
-		} else
-    // linea 5 network 
-		if (CAUSE_IP_GET(cause, IL_ETHERNET)){
-			device_handler(IL_ETHERNET);
-		} else
-    // linea 6 printer
-		if (CAUSE_IP_GET(cause, INT_PRINTER)){
-			device_handler(IL_PRINTER);
-		} else
-    // linea 7 terminal 
-		if (CAUSE_IP_GET(cause, INT_TERMINAL)){
-			terminal_handler();
-		}
-
+	//timer 
+	if (CAUSE_IP_GET(cause, IL_TIMER)){
+		timer_handler();
+	}
+	//disk 
+	else if (CAUSE_IP_GET(cause, IL_DISK)){
+		device_handler(IL_DISK);
+	}
+	//tape
+	else if (CAUSE_IP_GET(cause, IL_TAPE)){
+		device_handler(IL_TAPE);
+	}
+	//network 
+	else if (CAUSE_IP_GET(cause, IL_ETHERNET)){
+		device_handler(IL_ETHERNET);
+	}
+    //printer
+	else if (CAUSE_IP_GET(cause, INT_PRINTER)){
+		device_handler(IL_PRINTER);
+	} 
+    //terminal 
+	else if (CAUSE_IP_GET(cause, INT_TERMINAL)){
+		terminal_handler();
+	}
+	else{
+		PANIC();
+	}
 	scheduler();
 }
 
@@ -68,9 +62,9 @@ void int_handler(){
 int get_priority_dev(memaddr* line){
 	unsigned int activeBit = 1;
 	int i;
-	/* Usando una maschera (activeBit) ad ogni iterazione isolo i singoli
-	bit dei device della linea. Quando ne trovo uno settato ne restituisco
-	l'indice */
+	// Usando una maschera (activeBit) ad ogni iterazione isolo i singoli
+	//bit dei device della linea. Quando ne trovo uno settato ne restituisco
+	//l'indice 
 	for(i = 0; i < 8; i++){
 		if(((*line)&activeBit) == activeBit){
 			return i;
@@ -101,10 +95,6 @@ void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
 }
 
 
-
-void line_handler(int interruptLineNum){
-
-}
 
 //gestisce un device generico (no terminale)
 void device_handler(int dev_type){

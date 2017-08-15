@@ -2,7 +2,7 @@
 #define EXCEPTIONS_H
 
 
-unsigned int err_numb;
+//unsigned int err_numb;
 
 //funzioni
 void tlb_handler();

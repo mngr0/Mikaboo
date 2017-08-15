@@ -3,4 +3,6 @@
 
 void test();
 
+#define TERM0ADDR               0x24C
+
 #endif

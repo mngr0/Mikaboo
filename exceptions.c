@@ -12,7 +12,7 @@ state_t *tlb_old   = (state_t*) TLB_OLDAREA;
 state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
 state_t *sysbp_old   = (state_t*) SYSBK_OLDAREA;
 
-
+//salvo stato da uno ad un altro
 void save_state(state_t *from, state_t *to){
 	to->a1                  = from->a1;
 	to->a2                  = from->a2;
@@ -37,34 +37,17 @@ void save_state(state_t *from, state_t *to){
 	to->TOD_Hi              = from->TOD_Hi;
 	to->TOD_Low             = from->TOD_Low;
 }
-
+//resetta tutti i campi di uno state
 void reset_state(state_t *t_s){
-	t_s->a1 = 0;
-	t_s->a2 = 0;
-	t_s->a3 = 0;
-	t_s->a4 = 0;
-	t_s->v1 = 0;
-	t_s->v2 = 0;
-	t_s->v3 = 0;
-	t_s->v4 = 0;
-	t_s->v5 = 0;
-	t_s->v6 = 0;
-	t_s->sl = 0;
-	t_s->fp = 0;
-	t_s->ip = 0;
-	t_s->sp = 0;
-	t_s->lr = 0;
-	t_s->pc = 0;
-	t_s->cpsr = 0;
-	t_s->CP15_Control = 0;
-	t_s->CP15_EntryHi = 0;
-	t_s->CP15_Cause = 0;
-	t_s->TOD_Hi = 0;
-	t_s->TOD_Low = 0;
+	int i = 0;
+	// casting pointers
+	char *dest8 = (char *)t_s;
+	for (i = 0; i < sizeof(state_t); i++) {
+		dest8[i] = 0;
+	}
 }
-
+//mette un thread nella waitqueue
 void put_thread_sleep(struct tcb_t* t){
-	
 		thread_outqueue(t);
 		thread_enqueue(t,&wait_queue);
 		if(t==current_thread){
@@ -73,16 +56,27 @@ void put_thread_sleep(struct tcb_t* t){
 		t->t_status=T_STATUS_W4MSG;
 		soft_block_count++;
 }
-
-
+//sveglio un thread e lo metto nella readyqueue
+void wake_me_up(struct tcb_t* sleeper){
+	thread_outqueue(sleeper);
+	thread_enqueue(sleeper,&ready_queue);		
+	sleeper->t_status=T_STATUS_READY;	
+	soft_block_count--;
+}
+//se viene chiamato il tlb handler
 void tlb_handler(){
 	if(current_thread!= NULL){
+		//se ha un tlb manager
 		if(current_thread->t_pcb->tlb_mgr!=NULL){
+			//salvo lo stato della chiamata
 			save_state(tlb_old, &(current_thread->t_s));
+			//mando messaggio al manager che verrà svegliato
 			sys_send_msg(current_thread,current_thread->t_pcb->tlb_mgr,(uintptr_t)&(current_thread->t_s));
+			//metto nella wait queue
 			put_thread_sleep(current_thread);	
 		}
         else{
+        	//se non ha un tlb manager
             ssi_terminate_thread(current_thread);
             current_thread=NULL;
         }
@@ -94,11 +88,15 @@ void pgm_handler(){
     //gestione tempi
     if(current_thread != NULL){
         if(current_thread->t_pcb->prg_mgr!=NULL){
+        	//salvo lo stato della chiamata
             save_state(pgmtrap_old, &current_thread->t_s);
+			//mando messaggio al manager che verrà svegliato
             sys_send_msg(current_thread,current_thread->t_pcb->prg_mgr,(uintptr_t)pgmtrap_old);  
+            //metto nella wait queue
             put_thread_sleep(current_thread);
         }
         else{
+        	//se non ha il pgm manager
             ssi_terminate_thread(current_thread);
             current_thread =NULL;
         }
@@ -106,42 +104,25 @@ void pgm_handler(){
     scheduler();
 }
 
-void wake_me_up(struct tcb_t* sleeper){
-		thread_outqueue(sleeper);
-		thread_enqueue(sleeper,&ready_queue);		
-		sleeper->t_status=T_STATUS_READY;
-		
-}
 
-
+//mando un messaggio ad un thread e in caso lo sveglio
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	
 	//se il destinatario è in attesa proprio di questo messaggio
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
-		
 		* (unsigned int *)receiver->t_s.a3=msg;
 		receiver->t_s.a1=(unsigned int)sender;
 		//lo sveglio
 		wake_me_up(receiver);
 		receiver->t_s.pc += WORD_SIZE;
-		//CHECK
-
-		//if (sender!=SSI)
-		//	sender->t_s.a1=0;
-		soft_block_count--;
 	}
 	//altrimenti lo incodo normalmente
 	else{
 		int msg_res;
 		msg_res=msgq_add(sender,receiver,msg);
-		//coda piena, il messaggio non è stato inviato, la msgsend ritornerà -1 CHECK
+		//coda piena, il messaggio non è stato inviato, la msgsend ritornerà -1
 		if(msg_res==-1){
-			//CHECK
-			//se la funzione sys_send_msg è stata chiamata dall' interrupt handler
-			//mando un messaggio da parte dell' ssi, ma non vado a modificare i suoi registri
-			//ERRNO!!!!!
-			if (sender!=SSI)
-				sender->t_s.a1=-1;
+			sender->err_numb=ERR_MSQ_FULL;
 		}
 	}
 }
@@ -154,10 +135,10 @@ void check_thread_alive(struct tcb_t * t,int cause){
 		if(t->t_status == T_STATUS_NONE){
 			switch(cause){
 				case SYS_SEND:
-					err_numb=ERR_SEND_TO_DEAD;
+					t->err_numb=ERR_SEND_TO_DEAD;
 					break;
 				case SYS_RECV:
-					err_numb=ERR_RECV_FROM_DEAD;
+					t->err_numb=ERR_RECV_FROM_DEAD;
 					break;
 				default:
 					break;
@@ -222,6 +203,7 @@ void sys_bp_handler(){
 						current_thread->t_wait4sender=a1;
 						current_thread->t_s.a3=a2;
 						current_thread->t_status=T_STATUS_W4MSG;
+
 						current_thread->cpu_time+=getTODLO()-process_TOD;
 						current_thread=NULL;
 						soft_block_count++;

@@ -23,7 +23,7 @@ void ssi_getcputime();
 void ssi_get_mythreadid(struct tcb_t* sender, uintptr_t* reply );
 void ssi_get_parentprocid(struct pcb_t* sender, uintptr_t* reply );
 void ssi_get_processid(struct pcb_t* sender, uintptr_t* reply );
-void ssi_get_erro(uintptr_t* reply);
+void ssi_get_erro(struct tcb_t* sender,uintptr_t* reply);
 
 unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr_t* reply);
 void ssi_entry();

@@ -24,8 +24,6 @@
 #define GET_MYTHREADID 12
 #define GET_PARENTPROCID 13
 
-#define TERM0ADDR               0x24C
-
 
 typedef uintptr_t memaddr;
 typedef uintptr_t cputime;
@@ -34,7 +32,6 @@ typedef uintptr_t devaddr;
 
 
 extern void* SSI;
-extern void* MGRMGR;
 #define msgsend(dest, payload) (SYSCALL(SYS_SEND,(unsigned int) (dest),(unsigned int) (payload),0))
 
 #define msgrecv(source, reply) (((struct tcb_t *) SYSCALL(SYS_RECV,(unsigned int) (source),(unsigned int) (reply),0)))
