@@ -1,25 +1,5 @@
-/*****************************************************************************
- * mikabooq.c Year 2017 v.0.1 Febbraio, 04 2017                              *
- * Copyright 2017 Simone Berni, Marco Negrini, Dorotea Trestini              *
- *                                                                           *
- * This file is part of MiKABoO.                                             *
- *                                                                           *
- * MiKABoO is free software; you can redistribute it and/or modify it under  *
- * the terms of the GNU General Public License as published by the Free      *
- * Software Foundation; either version 2 of the License, or (at your option) *
- * any later version.                                                        *
- * This program is distributed in the hope that it will be useful, but       *
- * WITHOUT ANY WARRANTY; without even the implied warranty of                *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General *
- * Public License for more details.                                          *
- * You should have received a copy of the GNU General Public License along   *
- * with this program; if not, write to the Free Software Foundation, Inc.,   *
- * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.                  *
- *****************************************************************************/
-#include <stdlib.h>
 #include "mikabooq.h"
 #include "const.h"
-#include <stdio.h>
 
 struct list_head free_proc;     //free process list
 struct list_head free_thread;   //free thread list
@@ -28,6 +8,15 @@ struct pcb_t store_p[MAXPROC];	//memoria processi
 struct tcb_t store_t[MAXTHREAD];//memoria thread
 struct msg_t store_m[MAXMSG];	//memoria messaggi
 
+//resetta tutti i campi di uno state
+void reset_state(state_t *t_s){
+	int i = 0;
+	// casting pointers
+	char *dest8 = (char *)t_s;
+	for (i = 0; i < sizeof(state_t); i++) {
+		dest8[i] = 0;
+	}
+}
 struct pcb_t *proc_init(void){
 	struct pcb_t *root=&store_p[MAXPROC-1];
 	//inizializzazione root

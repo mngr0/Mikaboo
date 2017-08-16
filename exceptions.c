@@ -1,13 +1,8 @@
-#include <libuarm.h>
-#include <uARMconst.h>
-#include <uARMtypes.h>
-#include <arch.h>
 #include "const.h"
-#include "mikabooq.h"
 #include "scheduler.h"
-#include "nucleus.h"
 #include "exceptions.h"
 #include "ssi.h"
+
 state_t *tlb_old   = (state_t*) TLB_OLDAREA;
 state_t *pgmtrap_old = (state_t*) PGMTRAP_OLDAREA;
 state_t *sysbp_old   = (state_t*) SYSBK_OLDAREA;
@@ -37,26 +32,8 @@ void save_state(state_t *from, state_t *to){
 	to->TOD_Hi              = from->TOD_Hi;
 	to->TOD_Low             = from->TOD_Low;
 }
-/* e' carina ma piu lenta. Efficienza>all
-void save_state(state_t *from, state_t *to){
-	int i = 0;
-	// casting pointers
-	unsigned int *dest8 = (unsigned int *)to;
-	unsigned int *source8 = (unsigned int *)from;
-	for (i = 0; i < sizeof(state_t)/WORD_SIZE; i++) {
-		dest8[i] = source8[i];
-	}
-}
-*/
-//resetta tutti i campi di uno state
-void reset_state(state_t *t_s){
-	int i = 0;
-	// casting pointers
-	char *dest8 = (char *)t_s;
-	for (i = 0; i < sizeof(state_t); i++) {
-		dest8[i] = 0;
-	}
-}
+
+
 //mette un thread nella waitqueue
 void put_thread_sleep(struct tcb_t* t){
 		thread_outqueue(t);

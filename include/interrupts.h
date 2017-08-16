@@ -1,6 +1,5 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
-#include "nucleus.h"
 //struttura
 struct list_head* select_io_queue(unsigned int deviceType, unsigned int deviceNumber);
 //funzioni

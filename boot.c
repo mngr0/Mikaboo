@@ -1,8 +1,4 @@
 #include "const.h"
-#include "nucleus.h"
-#include "arch.h"
-#include "uARMconst.h"
-#include "mikabooq.h"
 #include "exceptions.h"
 #include "ssi.h"
 #include "scheduler.h"

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "mikabooq.h"
 #include <arch.h>
+#include <libuarm.h>
+
 /* Syscall mnemonic values */
 #define SYS_SEND    1
 #define SYS_RECV    2

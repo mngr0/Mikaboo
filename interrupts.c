@@ -1,13 +1,8 @@
-#include <libuarm.h>
-#include <uARMconst.h>
-#include <arch.h>
 #include "const.h"
-#include "mikabooq.h"
 #include "scheduler.h"
 #include "exceptions.h"
-#include "ssi.h"
 #include "interrupts.h"
-#include "nucleus.h"
+
 //non so perchè debba stare qua
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 void BP(){

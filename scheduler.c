@@ -1,9 +1,5 @@
-#include <uARMtypes.h>
+
 #include "scheduler.h"
-#include "mikabooq.h"
-#include "arch.h"
-#include "nucleus.h"
-#include "listx.h"
 #include "const.h"
 //non so perchè debbano stare qua sinceramente
 unsigned int slice_TOD = 0;

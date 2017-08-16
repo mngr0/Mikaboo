@@ -41,7 +41,7 @@ struct msg_t {
 
 	struct list_head m_next; /* link the other elements of the pending message queue */
 };
-
+void reset_state(state_t *t_s);
 /************************************** PROC MGMT ************************/
 
 /* initialize the data structure */

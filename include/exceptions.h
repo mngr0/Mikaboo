@@ -17,5 +17,5 @@ void wake_me_up(struct tcb_t* sleeper);
 void check_thread_alive(struct tcb_t * t,int cause);
 
 void save_state(state_t *from, state_t *to);
-void reset_state(state_t *t_s);
+
 #endif
