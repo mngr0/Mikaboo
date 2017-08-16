@@ -3,10 +3,10 @@ CC = arm-none-eabi-gcc
 CFLAGS = -mcpu=arm7tdmi -c -I /usr/include/uarm/ -I include
 LD = arm-none-eabi-ld
 LDFLAGS = -T /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x /usr/include/uarm/crtso.o /usr/include/uarm/libuarm.o
-
+OBJECTS = p2test.o  mikabooq.o boot.o exceptions.o scheduler.o ssi.o interrupts.o 
 all: mikaboo
 
-mikaboo: p2test.o  mikabooq.o boot.o exceptions.o scheduler.o ssi.o interrupts.o
+mikaboo: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o mikaboo mikabooq.o p2test.o boot.o exceptions.o scheduler.o ssi.o interrupts.o
 	elf2uarm -k mikaboo
 

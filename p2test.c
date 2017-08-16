@@ -22,7 +22,6 @@
 
 #include "nucleus.h"
 #include "p2test.h"
-#define QPAGE FRAME_SIZE
 
 static struct tcb_t* printid;
 
@@ -70,7 +69,6 @@ static inline void CSIN() {
     msgrecv(csid, NULL);
 }
 
-#define CSOUT msgsend(csid, NULL)
 
 void cs_thread(void) {
     struct tcb_t* sender;
@@ -81,7 +79,6 @@ void cs_thread(void) {
     }
 }
 
-#define SYNCCODE 0x01000010
 
 void p2(), p3(), p4(), p5(), p6(), p7(), p8();
 
@@ -188,8 +185,6 @@ void test(void) {
     HALT();
 }
 
-#define MINLOOPTIME             100
-#define LOOPNUM                 100
 
 void p2(void) {
     struct tcb_t* p1t;
@@ -232,8 +227,6 @@ void p2(void) {
     panic("p2 survived TERMINATE_THREAD\n");
 }
 
-#define PSEUDOCLOCK 100000
-#define NWAIT 2
 
 void p3(void) {
     tty0print("p3 started\n");
@@ -358,7 +351,6 @@ void p5s(void) {
     }
 }
 
-#define BADADDR 0xFFFFFFFF
 
 void p5(void) {
     state_t mgrstate;
@@ -466,7 +458,6 @@ void p8(void) {
     panic("p8 survived TERMINATE_PROCESS\n");
 }
 
-#define NGRANDCHILDREN 3
 
 void p8child() {
     int i;
