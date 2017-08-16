@@ -6,7 +6,7 @@
 //numero massimo
 #define MAXPROC 20
 #define MAXTHREAD 30
-#define MAXMSG 40
+#define MAXMSG 230
 //ERR_NUMBER DEFINITI
 #define NO_ERR 0
 #define ERR_SEND_TO_DEAD 1
@@ -37,5 +37,5 @@ unsigned int waiting_TOD;
 struct list_head ready_queue;
 struct list_head wait_queue;
 struct list_head wait_pseudo_clock_queue;
-struct list_head device_list[DEV_USED_INTS*(DEV_PER_INT+1)];//+1 perche i terminali contano doppio, hanno sia tx che rx
+struct list_head device_list[(DEV_USED_INTS+1)*DEV_PER_INT];//+1 perche i terminali contano doppio, hanno sia tx che rx
 #endif
