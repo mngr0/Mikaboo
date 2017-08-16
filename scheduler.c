@@ -1,7 +1,5 @@
-
 #include "scheduler.h"
 #include "const.h"
-//non so perchè debbano stare qua sinceramente
 unsigned int slice_TOD = 0;
 unsigned int clock_TOD = 0;
 

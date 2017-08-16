@@ -38,6 +38,8 @@ void save_state(state_t *from, state_t *to){
 void put_thread_sleep(struct tcb_t* t){
 		thread_outqueue(t);
 		thread_enqueue(t,&wait_queue);
+		current_thread->cpu_time+=getTODLO()-process_TOD;
+
 		if(t==current_thread){
 			current_thread=NULL;
 		}
@@ -95,7 +97,6 @@ void pgm_handler(){
 
 //mando un messaggio ad un thread e in caso lo sveglio
 void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
-	
 	//se il destinatario è in attesa proprio di questo messaggio
 	if( (receiver->t_status==T_STATUS_W4MSG) && ( (receiver->t_wait4sender==sender) || (receiver->t_wait4sender==NULL) ) ){
 		* (unsigned int *)receiver->t_s.a3=msg;
@@ -103,8 +104,6 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 		//lo sveglio
 		wake_me_up(receiver);
 		receiver->t_s.pc += WORD_SIZE;
-
-
 	}
 	//altrimenti lo incodo normalmente
 	else{
@@ -116,8 +115,6 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 		}
 	}
 }
-
-void sys_recv_msg(){}
 
 //controlla che il thread al quale si invia/si riceve un messaggio sia vivo
 void check_thread_alive(struct tcb_t * t,int cause){
@@ -148,13 +145,13 @@ void sys_bp_handler(){
 	unsigned int a0 = sysbp_old->a1;
 	struct tcb_t* a1 =(struct tcb_t *) sysbp_old->a2;
 	uintptr_t a2 = sysbp_old->a3;
-	//salvo messaggio
-	int msg_res;
+
 	// Se l'eccezione è di tipo System call 
 
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
+			int msg_res;
 			switch(a0){
 				//errore
 				case 0:
@@ -184,18 +181,11 @@ void sys_bp_handler(){
 					msg_res=msgq_get(&a1,current_thread,(uintptr_t *)a2);
 					//non c'è ancora il messaggio
 					if (msg_res==-1){
-						//non è più il thread corrente
-						thread_outqueue(current_thread);
-						//perchè va in attessa
-						thread_enqueue(current_thread,&wait_queue);
-						//sistemo i vari campi
+						//setto i campi
 						current_thread->t_wait4sender=a1;
 						current_thread->t_s.a3=a2;
-						current_thread->t_status=T_STATUS_W4MSG;
-
-						current_thread->cpu_time+=getTODLO()-process_TOD;
-						current_thread=NULL;
-						soft_block_count++;
+						//metto il thread in attesa
+						put_thread_sleep(current_thread);
 					}
 					//caso corretto
 					else{

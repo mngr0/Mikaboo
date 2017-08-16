@@ -29,7 +29,7 @@ Tornando ad altre scelte implementative di questa sezione, riteniamo sia opportu
 Ad eseguire le operazioni appena elencate, ci vengono in aiuto le funzioni exterminate_thread ed ecterminate_process.
 
 L'ultimo fatto di nota della sezione è il seguente: se un processo è in attesa di ricevere un messaggio da un thread che nel frattempo è stato ucciso,cosa deve succedere? In questo caso, nel nostro progetto, entra in gioco la funzione check_death che si occuperà di controllare tutti i processi che stavano aspettando un messaggio che fatalmente non arriverò mai, e abbiamo deciso che i thread in attesa debbano venire risvegliati e riposizionati nella wait_queue.
-
+//CHECK ssi_doio
 E' ora il momento di descrivere il nostro file exception.c, il quale si occupa della gestione degli handler.
 
 //exceptions.c

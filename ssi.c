@@ -196,6 +196,7 @@ void ssi_get_processid(struct pcb_t* sender, uintptr_t* reply ){
 //ritorno l'error number
 void ssi_get_erro(struct tcb_t* sender,uintptr_t* reply){
 	*reply=sender->err_numb;
+	sender->err_numb=NO_ERR;
 }
 
 //funzione principale dell SSI, controlla che il servizio sia un valore corretto e chiama la funzione corrispondente
