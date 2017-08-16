@@ -1,5 +1,5 @@
 #include "mikabooq.h"
-#include "const.h"
+
 
 struct list_head free_proc;     //free process list
 struct list_head free_thread;   //free thread list
