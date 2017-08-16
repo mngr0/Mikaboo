@@ -59,7 +59,7 @@ void tlb_handler(){
 			//salvo lo stato della chiamata
 			save_state(tlb_old, &(current_thread->t_s));
 			//mando messaggio al manager che verrà svegliato
-			sys_send_msg(current_thread,current_thread->t_pcb->tlb_mgr,(uintptr_t)&(current_thread->t_s));
+			sys_send_msg(current_thread,current_thread->t_pcb->tlb_mgr,(uintptr_t)tlb_old);
 			//metto nella wait queue
 			put_thread_sleep(current_thread);	
 		}
@@ -133,7 +133,6 @@ void check_thread_alive(struct tcb_t * t,int cause){
 				default:
 					break;
 			}
-			//gestire err No
 			scheduler();
 		}
 	}
@@ -211,16 +210,12 @@ void sys_bp_handler(){
 					}
 					break;
 				default:
+				  
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sys_mgr != NULL) {
 				    	sys_send_msg(current_thread,current_thread->t_pcb->sys_mgr,(uintptr_t)&(current_thread->t_s));
 				    	put_thread_sleep(current_thread);
                		  }
-               		//se  hanno un program pgr adeguato
-				    else if(current_thread->t_pcb->prg_mgr != NULL) {
-				    	sys_send_msg(current_thread,current_thread->t_pcb->prg_mgr,(uintptr_t)&(current_thread->t_s));
-				    	put_thread_sleep(current_thread);
-               		}
                		//lo uccido
 				    else {
 			            ssi_terminate_thread(current_thread);

@@ -1,0 +1,75 @@
+Il nostro progetto è composto da 6 file principali, più ovviamente i file di test che dovranno essere svolti.
+Ogni file C ha il corrispondente header dove sono descritte le funzioni.
+Il file const.h contiene tutte le variabili globali che verranno utilizzate successivamente e tutti i define utili alla comprensione del codice.
+
+Come ogni programma che si rispetta, è necessario un main(){}, ed è quindi il momento di chiamare il nostro:
+
+//boot.c
+Esso inizializza le code dei device, la ready,wait e pseudoclock queue; successivamente inizializza le 4 aree di memoria riservate:tlb, program, sysbp e interrupts come predefinito da uarm.
+E' necessario fare inoltre la init di phase1, ed è sempre in questa sezione che avviene.
+Infine crea il processo SSI, un ulteriore processo per eseguire il test e i due relativi thread di esecuzione: uno per l SSI e uno per il test.
+Da questo momento il programma non entrerà più nel boot poichè sarà sempre lo scheduler che si occuperà dell'esecuzione dei thread e, in caso opportuno, della HALT della macchina.
+
+Il file che si occupa della gestione di incodare in maniera perfetta, o almeno quella era l'idea di partenza, è proprio:
+
+//scheduler.c
+
+
+//frase ad effetto che non so come scrivere
+
+//ssi.c
+Per noi l ssi è il processo radice, il quale si occuperà di fornire servizi ai thread che li richiedono: i servizi implementati sono quelli richiesti da specifiche. Ci preoccuperemo in questo momento di argomentare alcune scelte implementative effettuate nei servizi dell ssi: ad ogni thread sono stati aggiunti, rispetto a phase1, 2 campi che sono stati ritenuti necessari. 
+Ogni thread possiede un err_number che verrà ritornato nell'omonimo servizio e un cpu_time che, allo stesso modo, verrà ritornato dal servizio get_cputime. 
+
+Ogni processo inoltre possiede 3 puntatori a tlb_t, ogni puntatore designa rispettivamente il tlb manager, il prgtrap manager e il sys manager che nella stessa identica maniera verranno restituiti se l'apposito servizio è richiamato.
+//CHECK E' inoltre opportuno notare che non sempre l SSI deve rispondere al thread che lo ha invocato, in quanto il messaggio di wake_up può essere restituito da un handler o da un device.
+
+Tornando ad altre scelte implementative di questa sezione, riteniamo sia opportuno descrivere alcune scelte nella uccisione di thread e processi: se è necessario uccidere un thread, sia per servizio richiesto che per richiesta erronea, abbiamo deciso che:
+- se un processo non ha più thread, allora deve essere ucciso; -se un processo non ha più il padre, allora deve essere ucciso (questo punto in particolare è stato deciso perchè nelle specifiche di phase1 non era possibile avere thread che non avessero padre, ad esclusione del processo root) -se il processo è stato ucciso, allora tutti i suoi thread devono essere uccisi.
+Ad eseguire le operazioni appena elencate, ci vengono in aiuto le funzioni exterminate_thread ed ecterminate_process.
+
+L'ultimo fatto di nota della sezione è il seguente: se un processo è in attesa di ricevere un messaggio da un thread che nel frattempo è stato ucciso,cosa deve succedere? In questo caso, nel nostro progetto, entra in gioco la funzione check_death che si occuperà di controllare tutti i processi che stavano aspettando un messaggio che fatalmente non arriverò mai, e abbiamo deciso che i thread in attesa debbano venire risvegliati e riposizionati nella wait_queue.
+
+E' ora il momento di descrivere il nostro file exception.c, il quale si occupa della gestione degli handler.
+
+//exceptions.c
+Partiamo dal descrivere le funzioni più intuitive: save_state si occupa di copiare il contenuto di uno stato in un altro; wake_me_up è l'antagonista di put_thread_sleep: mentre una si occupa di togliere un thread dalla wait_queue, l'altro invece lo inserisce in questa ultima, aggiornando sempre opportunamente il numero di thread softblockati per individuare caso di deadlock.
+Le altre funzioni di supporto le spiegheremo man mano che viene descritto la funzione protagonista del file: sys_bp_handler.
+
+Ogni volta che una systemcall è invocata(nel nostro caso send o recv) lei si occupa della gestione.Il primo controllo avviene sui permessi del processo che li richiedono: programmi in kernel mode sono in grado di farle direttamente, mentre quelli in usermode dovranno affidarsi ai propri program manager e system manager.
+Per tutti gli altri servizi, non send e recv per intenderci, sia thread in kernel mode che in user mode dovranno chiamare i rispettivi managerer.
+Se il thread non possiede un manager che è necessario avere per completare la richiesta, allora verrà brutalmente ucciso.
+
+Iniziando a parlare dai thread che possono permettersi di mandare e ricevere direttamente messaggi, direi che come scelta implementativa è necessario fare notare che la nostra sys_send_msg non sempre incoda il messaggio. Se sappiamo che il thread destinatario è già in attesa, aggiorniamo i vari campi del suo stato e lo svegliamo direttamente.
+//descrivere recv
+
+Sia la send che la recv in kernel mode eseguono il controllo di "sto mandando un messaggio ad un thread vivo?". Se la risposta a questa domanda è no, check_death imposta l'err_numb con il valore adeguato.
+Caso thread in usermode: se è una send o una recv, invoco il program handler, se è un servizio accettabile sveglio il proprio sys manager.
+Scelte implementative importanti non ci sembra ci siano, apparte l'uso massiccio di cast per evitare warning.
+
+Tlb_handler e prg_handler sono esattamente identici,solo che hanno due zone di memoria riservata diversa e tecnicamente hanno due compiti diversi: in pratica entrambi salvano il proprio stato nel processo corrente, entrambi mandano una send ad il rispettivo manager(che verrà svegliato)//CHECK aggiornano i tempi  e mettono il thread corrente a dormire.
+Ovviamente dopo ogni handler, lo scheduler deve essere richiamato per poter incodare il prossimo thread.
+
+E' il momento di entrare nel mondo dei #define e della matematica, è il momento di descrivere cosa succede quando un interrupt ad un device viene chiamato:interrupts.c
+
+//interrupts.c
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
