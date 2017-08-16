@@ -31,8 +31,8 @@ exceptions.o : exceptions.c
 boot.o : boot.c
 	$(CC) $(CFLAGS) -o boot.o boot.c
 
-p2test.o : p2test.c
-	$(CC) $(CFLAGS) -o p2test.o p2test.c
+p2test.o : p2p.c
+	$(CC) $(CFLAGS) -o p2test.o p2p.c
 
 clean:
 	rm -rf *.o mikaboo
