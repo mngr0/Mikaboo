@@ -277,7 +277,7 @@ void test(void) {
     }
     
     tty0print("IT'S ALIVE! IT'S ALIVE! THE KERNEL IS ALIVE!\n");
-    HALT();
+    terminate_process();
 }
 
 
@@ -330,6 +330,7 @@ void p3(void) {
     cputime time1, time2;
     int i;
     time1 = getTODLO();
+    
     for (i = 0; i < NWAIT; i++) {
         waitforclock();
     }

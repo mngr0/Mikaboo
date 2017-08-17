@@ -13,20 +13,28 @@ mikaboo.core: mikaboo
 mikaboo: $(OBJECTS)
 	$(LD) $(LDFLAGS) -o mikaboo $(OBJECTS)
 
+mikabooq.o : mikabooq.c
+	$(CC) $(CFLAGS) -o mikabooq.o mikabooq.c
 
-build: $(OBJECTS) $(DEPH) $(EXEC).o
-	$(CCT) $(TFLAGS) $(OBJECTS) $(EXEC).o -o release/kernel
-           
-rebuild: clean build link
+ssi.o : ssi.c
+	$(CC) $(CFLAGS) -o ssi.o ssi.c
 
-%.o: %.c
-	$(CC) $(CFLAGS) $< 
+interrupts.o : interrupts.c
+	$(CC) $(CFLAGS) -o interrupts.o interrupts.c
 
-link: 
-	umps2-elf2umps -k release/kernel
+scheduler.o : scheduler.c
+	$(CC) $(CFLAGS) -o scheduler.o scheduler.c
+
+exceptions.o : exceptions.c
+	$(CC) $(CFLAGS) -o exceptions.o exceptions.c
+
+boot.o : boot.c
+	$(CC) $(CFLAGS) -o boot.o boot.c
+
+p2test.o : p2p.c
+	$(CC) $(CFLAGS) -o p2test.o p2p.c
 
 clean:
 	rm -rf *.o mikaboo
-
 cleanall:
 	rm -rf *.o mikaboo mikaboo.core.uarm mikaboo.stab.uarm

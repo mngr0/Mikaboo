@@ -1,10 +1,16 @@
 #include "scheduler.h"
 #include "const.h"
 unsigned int slice_TOD = 0;
-unsigned int clock_TOD = 0;
+
+
+void BA(){}
+void BB(){}
+void BC(){}
+
 
 //inizializzazione liste di attesa dei device
 void init_dev_ctrl(){
+    last_TOD=0;
     int i;
     for (i=0;i<(DEV_USED_INTS+1)*DEV_PER_INT;i++){
         INIT_LIST_HEAD(&device_list[i]);
@@ -12,21 +18,18 @@ void init_dev_ctrl(){
 }
 
 //magic is still here
-int timer(unsigned int TIMER_TYPE){
+int isTimeSlice(){
     int time_until_timer;
     /* Calcola il tempo che manca allo scadere del timer di tipo TIMER_TYPE */
-    if(TIMER_TYPE == SCHED_TIME_SLICE){
-        time_until_timer= TIMER_TYPE - (getTODLO() - slice_TOD);
-    } else if(TIMER_TYPE == SCHED_PSEUDO_CLOCK){
-        time_until_timer= TIMER_TYPE - (getTODLO() - clock_TOD);
-    }
-    /* Se è scaduto ritorna true, altrimenti false */
+    time_until_timer= SCHED_TIME_SLICE - (getTODLO() - slice_TOD);
+    
     if(time_until_timer <= 0){
         return TRUE;
     } else { 
         return FALSE;
     }
 }
+struct tcb_t *aaat_temp;
 //ancora magia, quando saprò cosa fa, la commenterò
 void set_next_timer(){
     unsigned int TODLO = getTODLO();
@@ -38,21 +41,37 @@ void set_next_timer(){
         slice_TOD = TODLO;
         time_until_slice= SCHED_TIME_SLICE;
     }
-    
-    // Calcola il tempo trascorso dall'inizio del ciclo di pseudo clock corrente 
-    int time_until_clock = SCHED_PSEUDO_CLOCK - (TODLO - clock_TOD);
-    // Se il ciclo di pseudo clock è appena teminato setta il prossimo 
-    if(time_until_clock <= 0){
-        clock_TOD = TODLO;
-        time_until_clock = SCHED_PSEUDO_CLOCK;
-    }
-    // Setta il prossimo timer 
-    if(time_until_slice <= time_until_clock) {
+    //struct tcb_t 
+    aaat_temp=NULL;
+
+
+    // Calcola il tempo trascorso dall'inizio del ciclo di pseudo clock corrente
+    if(list_empty(&wait_pseudo_clock_queue)){
+        BA();
         setTIMER(time_until_slice);
-    } else {
-        setTIMER(time_until_clock);
+    }else{
+        int time_until_clock = SCHED_PSEUDO_CLOCK- thread_qhead(&wait_pseudo_clock_queue)->elapsed_time;
+        for_each_thread_in_q(aaat_temp,&wait_pseudo_clock_queue){
+            aaat_temp->elapsed_time+=TODLO-last_TOD;
+        }
+        if(time_until_slice <= time_until_clock) {
+            setTIMER(time_until_slice);
+        } else {
+            setTIMER(time_until_clock);
+        }
     }
+    // Se il ciclo di pseudo clock è appena teminato setta il prossimo 
+    // if(time_until_clock <= 0){
+    //     clock_TOD = TODLO;
+    //     time_until_clock = SCHED_PSEUDO_CLOCK;
+    // }
+    // Setta il prossimo timer 
+    //if (current_thread==NULL){
+        
+    //}
+    last_TOD=getTODLO();  
 }
+
 //funzione master del file, schedula il processo giusto e controlla i deadlock
 void scheduler() {
 	//setto prossimo timer
@@ -106,6 +125,7 @@ void scheduler() {
 
 //        }
         // carico lo stato del thread nel processore
+          
         LDST(&(current_thread->t_s));
     }
 }

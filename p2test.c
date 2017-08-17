@@ -91,20 +91,20 @@ uintptr_t p5sys = 0;
 uintptr_t p5send = 0;
 
 void test(void) {
-    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
+    ttyprintstring(TERM0ADDR, "starting\n");
     STST(&tmpstate);
     stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) tty0out_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid = create_thread(&tmpstate);
-    tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
+    tty0print("first msg\n");
     testt = get_mythreadid();
 
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
-    tty0print("NUCLEUS: critical section thread started\n");
+    tty0print("cs\n");
     
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
@@ -115,7 +115,7 @@ void test(void) {
     msgrecv(p2t, NULL);
 
     tty0print("p2 completed\n");
-
+    
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -226,12 +226,12 @@ void p2(void) {
 
     panic("p2 survived TERMINATE_THREAD\n");
 }
-
+    cputime time1, time2;
 
 void p3(void) {
     tty0print("p3 started\n");
 
-    cputime time1, time2;
+
     int i;
     time1 = getTODLO();
     for (i = 0; i < NWAIT; i++) {

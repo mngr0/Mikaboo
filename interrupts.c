@@ -65,16 +65,26 @@ int get_priority_dev(memaddr* line){
 	return -1;
 }
 
-
+void CA(){}
+void CB(){}
 void timer_handler(){
 	//if(isTimer(SCHED_PSEUDO_CLOCK))
+	// if (isTimeSlice()){
+	// 	thread_enqueue(current_thread,&ready_queue);
+	// 	current_thread=NULL;
+	// 	scheduler();
+	// }	
+
 	if(!list_empty(&wait_pseudo_clock_queue))
-		if (( getTODLO() - waiting_TOD)>100000){
-			while(!list_empty(&wait_pseudo_clock_queue)){
+		//if (( getTODLO() - waiting_TOD)>100000){
+			while((!list_empty(&wait_pseudo_clock_queue))
+				&&( thread_qhead(&wait_pseudo_clock_queue)->elapsed_time>SCHED_PSEUDO_CLOCK)) {
+
 				struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
 				thread_enqueue(thread,&ready_queue);
+				CA();
 			}
-		}
+		//}
 }
 
 //manda un segnale di acknowledge al thread che è in attesa da un device

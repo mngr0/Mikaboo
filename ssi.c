@@ -148,7 +148,8 @@ void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
 }
 unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	*reply=(unsigned int)NULL;
-	waiting_TOD=getTODLO();
+	sender->elapsed_time = 0;
+	//waiting_TOD=getTODLO();
 	thread_outqueue(sender);
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
 	return FALSE;

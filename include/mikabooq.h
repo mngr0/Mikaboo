@@ -32,6 +32,7 @@ struct tcb_t {
 	struct list_head t_msgq; /* list of pending messages for the current thread */
 
 	unsigned int cpu_time;
+	unsigned int elapsed_time;
 	unsigned int err_numb;
 };
 
