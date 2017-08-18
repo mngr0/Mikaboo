@@ -9,7 +9,8 @@ void BC(){}
 void BD(){}
 void BE(){}
 void BF(){}
-
+void BG(){}
+void BH(){}
 //inizializzazione liste di attesa dei device
 void init_dev_ctrl(){
     last_TOD=0;
@@ -24,37 +25,60 @@ int is_time_slice(){
     return (SCHED_TIME_SLICE - (getTODLO() - slice_TOD) <= 0);
 }
 
-struct tcb_t *aaat_temp;
+
+int time_until_slice;
+int time_until_clock;
 //ancora magia, quando saprò cosa fa, la commenterò
 void set_next_timer(){
     unsigned int TODLO = getTODLO();
     // Calcola il tempo trascorso dall'inizio del time slice corrente 
-    int time_until_slice = SCHED_TIME_SLICE - (TODLO - slice_TOD);
+    time_until_slice = SCHED_TIME_SLICE - (TODLO - slice_TOD);
 
     // Se il time slice è appena teminato setta il prossimo 
     if(time_until_slice<=0){
+
         slice_TOD = TODLO;
         time_until_slice= SCHED_TIME_SLICE;
     }
     //struct tcb_t 
-    aaat_temp=NULL;
+    struct tcb_t *aaat_temp=NULL;
 
 
+    if(!list_empty(&wait_pseudo_clock_queue)){
+        while((!list_empty(&wait_pseudo_clock_queue))
+            &&( thread_qhead(&wait_pseudo_clock_queue)->elapsed_time>SCHED_PSEUDO_CLOCK)) {
+            struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
+            if (thread->t_status==T_STATUS_READY){
+                thread_enqueue(thread,&ready_queue);
+                soft_block_count--;
+            }else{
+                thread_enqueue(thread,&wait_queue);
+            }
+            sys_send_msg(SSI,thread,(unsigned int)NULL);
+        }
+    }
     // Calcola il tempo trascorso dall'inizio del ciclo di pseudo clock corrente
     if(list_empty(&wait_pseudo_clock_queue)){
-      //  BA();
+
         setTIMER(time_until_slice);
+
     }else{
-        int time_until_clock = SCHED_PSEUDO_CLOCK- thread_qhead(&wait_pseudo_clock_queue)->elapsed_time;
+
+
+        time_until_clock = SCHED_PSEUDO_CLOCK- thread_qhead(&wait_pseudo_clock_queue)->elapsed_time;
         for_each_thread_in_q(aaat_temp,&wait_pseudo_clock_queue){
             aaat_temp->elapsed_time+=TODLO-last_TOD;
         }
+
+
         if(time_until_slice <= time_until_clock) {
-           // BB();
+
             setTIMER(time_until_slice);
+
         } else {
-         //   BC();
+
             setTIMER(time_until_clock);
+
         }
     }
     // Se il ciclo di pseudo clock è appena teminato setta il prossimo 

@@ -3,7 +3,7 @@ CFLAGS = -mcpu=arm7tdmi -c -I /usr/include/uarm/ -I include
 LD = arm-none-eabi-ld
 EF = elf2uarm -k
 LDFLAGS = -T /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x /usr/include/uarm/crtso.o /usr/include/uarm/libuarm.o
-OBJECTS =  mikabooq.o p2test.o  boot.o exceptions.o scheduler.o ssi.o interrupts.o 
+OBJECTS =  mikabooq.o p2p.o  boot.o exceptions.o scheduler.o ssi.o interrupts.o 
 
 all: mikaboo.core
 
