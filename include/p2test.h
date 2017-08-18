@@ -10,7 +10,7 @@ void test();
 #define QPAGE FRAME_SIZE
 #define CSOUT msgsend(csid, NULL)
 #define PSEUDOCLOCK 100000
-#define NWAIT 5
+#define NWAIT 10
 #define BADADDR 0xFFFFFFFF
 #define NGRANDCHILDREN 3
 

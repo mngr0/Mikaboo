@@ -45,8 +45,13 @@ void set_next_timer(){
 
 
     if(!list_empty(&wait_pseudo_clock_queue)){
+
+        for_each_thread_in_q(aaat_temp,&wait_pseudo_clock_queue){
+            aaat_temp->elapsed_time+=TODLO-last_TOD;
+        }
+
         while((!list_empty(&wait_pseudo_clock_queue))
-            &&( thread_qhead(&wait_pseudo_clock_queue)->elapsed_time>SCHED_PSEUDO_CLOCK)) {
+            &&( thread_qhead(&wait_pseudo_clock_queue)->elapsed_time>=SCHED_PSEUDO_CLOCK)) {
             struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
             if (thread->t_status==T_STATUS_READY){
                 thread_enqueue(thread,&ready_queue);
@@ -66,11 +71,7 @@ void set_next_timer(){
 
 
         time_until_clock = SCHED_PSEUDO_CLOCK- thread_qhead(&wait_pseudo_clock_queue)->elapsed_time;
-        for_each_thread_in_q(aaat_temp,&wait_pseudo_clock_queue){
-            aaat_temp->elapsed_time+=TODLO-last_TOD;
-        }
-
-
+    
         if(time_until_slice <= time_until_clock) {
 
             setTIMER(time_until_slice);
@@ -81,16 +82,8 @@ void set_next_timer(){
 
         }
     }
-    // Se il ciclo di pseudo clock è appena teminato setta il prossimo 
-    // if(time_until_clock <= 0){
-    //     clock_TOD = TODLO;
-    //     time_until_clock = SCHED_PSEUDO_CLOCK;
-    // }
-    // Setta il prossimo timer 
-    //if (current_thread==NULL){
-        
-    //}
-    last_TOD=getTODLO();  
+
+    last_TOD=TODLO;  
 }
 
 //funzione master del file, schedula il processo giusto e controlla i deadlock
@@ -109,46 +102,26 @@ void scheduler() {
         }
         //CHECK
 	   else if (thread_count > 0 && soft_block_count > 0) { // in attesa di un interrupt -> wait state 
-            // se ci sono thread in attesa dello pseudo tick,
-            // carico il valore dello pseudo clock nel registro della cpu.
-            if (!list_empty(&wait_pseudo_clock_queue)) {
-              //  SET_IT(SCHED_PSEUDO_CLOCK);
-            }
             // impostiamo lo stato del processore con gli interrupt abilitati
             setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
             WAIT();
         }
-    }
- else {
+     }
+     else {
        // BD();
         // Se non c'è nessun Thread in esecuzione ma c'e n'è almeno uno nella ready_queue allora  carico un thread
         if (current_thread == NULL) {
             //BE();
-            current_thread = thread_dequeue(&ready_queue);
-            process_TOD=getTODLO();
-           // current_thread->elapsedTime = 0;
-           // current_thread->startTime = GET_TODLOW;
-          //  SET_IT(SCHED_TIME_SLICE);
-            /* Altrimenti se è passato il SCHED_TIME_SLICE rimuovo il thread corrente dall'esecuzione*/
-        }// else if (current_thread->elapsedTime >= SCHED_TIME_SLICE) {
-            //in questo modo do priorità all'SSI
-         //   if (current_thread != tcb_SSI) {
-           //     insertThread(&ready_queue, current_thread);
-                /*Carico un nuovo thread*/
-            //    current_thread = removeThread(&ready_queue);
-	 //     }
+            // if(thread_in_queue(&ready_queue,SSI)){
+            //     thread_outqueue(SSI);
+            //     current_thread = SSI;
+            // }else{
+                current_thread = thread_dequeue(&ready_queue);
+            // }        
+        }
 
-           // current_thread->elapsedTime = 0;
-           // current_thread->startTime = GET_TODLOW;
+        process_TOD=getTODLO();
 
-            /* Se e' scattato lo pseudo clock non settiamo il timer a 5 ms 
-             * dato che scattera' subito l'interrupt dello pseudo clock */
-           // if (!isPseudoClock)
-           //     SET_IT(SCHED_TIME_SLICE);
-
-//        }
-        // carico lo stato del thread nel processore
-        //  setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
         LDST(&(current_thread->t_s));
     }
 }

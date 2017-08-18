@@ -77,10 +77,6 @@ int get_priority_dev(memaddr* line){
 }
 
 
-
-
-
-
 void timer_handler(){
 
 	if (is_time_slice()){

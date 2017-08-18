@@ -233,7 +233,7 @@ void test(void) {
     CSOUT;
     tmpstate.pc = (memaddr) test3;
     p3tt = create_thread(&tmpstate);
-
+    
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -263,7 +263,7 @@ void test(void) {
     CSOUT;
     tmpstate.pc = (memaddr) test8;
     p8tt = create_thread(&tmpstate);            
-
+    
     msgsend(p2tt,SYNCCODE);
     msgsend(p3tt,SYNCCODE);
     msgsend(p4tt,SYNCCODE);
@@ -323,22 +323,25 @@ void p2(void) {
     panic("p2 survived TERMINATE_THREAD\n");
 }
 
-
+cputime time1, time2,ptimePRE,ptimePOST,waste[NWAIT];
 void p3(void) {
     ttyNprint(2,"p3 started\n");
 
-    cputime time1, time2;
+    
     int i;
     time1 = getTODLO();
     
     for (i = 0; i < NWAIT; i++) {
+        ptimePRE=getTODLO();
         waitforclock();
+        ptimePOST=getTODLO();
+        waste[i]=(ptimePOST - ptimePRE)-PSEUDOCLOCK;
     }
     time2 = getTODLO();
 
     if ((time2 - time1) < (PSEUDOCLOCK * (NWAIT - 1))) {
         panic("WAITCLOCK too small\n");
-    } else if ((time2 - time1) > (PSEUDOCLOCK * (NWAIT + 1))) {
+    } else if ((time2 - time1) > (PSEUDOCLOCK * (NWAIT + 5))) {
         panic("WAITCLOCK too big\n");
     } else {
         ttyNprint(2,"WAITCLOCK OK\n");
