@@ -138,6 +138,7 @@ void check_thread_alive(struct tcb_t * t,int cause){
 
 //gestione system calle breaking point
 void sys_bp_handler(){
+	//setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
 	//salvo lo stato del thread corrente
 	save_state(sysbp_old, &current_thread->t_s);
 	//mi salvo i vari campi che mi serviranno

@@ -4,12 +4,17 @@
 #include "interrupts.h"
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
+
+
+
 //calcola la giusta lista di attesa per il dato device, e ne restituisce un puntatore
 struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
 	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
 }
 //gestisco gli interrupt
 void int_handler(){
+	//setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
+
 	//devo ritornare all' istruzione recedente siccome gli interrupt vengono catturati dopo l' incremento del pc
 	int_old->pc -= 4;
 	if(current_thread != NULL){
@@ -67,13 +72,27 @@ int get_priority_dev(memaddr* line){
 
 void CA(){}
 void CB(){}
+void CC(){}
+void CD(){}
+void CE(){}
+void CF(){}
+
+
+
+
+
 void timer_handler(){
-	//if(isTimer(SCHED_PSEUDO_CLOCK))
-	// if (isTimeSlice()){
-	// 	thread_enqueue(current_thread,&ready_queue);
-	// 	current_thread=NULL;
-	// 	scheduler();
-	// }	
+	//CA();
+	if (is_time_slice()){
+		//CB();
+		if(current_thread!=NULL){
+		//	CC();
+			thread_enqueue(current_thread,&ready_queue);
+		//	CD();
+			current_thread=NULL;
+		//	CE();
+		}
+	}	
 
 	if(!list_empty(&wait_pseudo_clock_queue))
 		//if (( getTODLO() - waiting_TOD)>100000){
@@ -82,7 +101,6 @@ void timer_handler(){
 
 				struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
 				thread_enqueue(thread,&ready_queue);
-				CA();
 			}
 		//}
 }

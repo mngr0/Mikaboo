@@ -6,7 +6,9 @@ unsigned int slice_TOD = 0;
 void BA(){}
 void BB(){}
 void BC(){}
-
+void BD(){}
+void BE(){}
+void BF(){}
 
 //inizializzazione liste di attesa dei device
 void init_dev_ctrl(){
@@ -18,17 +20,10 @@ void init_dev_ctrl(){
 }
 
 //magic is still here
-int isTimeSlice(){
-    int time_until_timer;
-    /* Calcola il tempo che manca allo scadere del timer di tipo TIMER_TYPE */
-    time_until_timer= SCHED_TIME_SLICE - (getTODLO() - slice_TOD);
-    
-    if(time_until_timer <= 0){
-        return TRUE;
-    } else { 
-        return FALSE;
-    }
+int is_time_slice(){
+    return (SCHED_TIME_SLICE - (getTODLO() - slice_TOD) <= 0);
 }
+
 struct tcb_t *aaat_temp;
 //ancora magia, quando saprò cosa fa, la commenterò
 void set_next_timer(){
@@ -47,7 +42,7 @@ void set_next_timer(){
 
     // Calcola il tempo trascorso dall'inizio del ciclo di pseudo clock corrente
     if(list_empty(&wait_pseudo_clock_queue)){
-        BA();
+      //  BA();
         setTIMER(time_until_slice);
     }else{
         int time_until_clock = SCHED_PSEUDO_CLOCK- thread_qhead(&wait_pseudo_clock_queue)->elapsed_time;
@@ -55,8 +50,10 @@ void set_next_timer(){
             aaat_temp->elapsed_time+=TODLO-last_TOD;
         }
         if(time_until_slice <= time_until_clock) {
+           // BB();
             setTIMER(time_until_slice);
         } else {
+         //   BC();
             setTIMER(time_until_clock);
         }
     }
@@ -99,8 +96,10 @@ void scheduler() {
         }
     }
  else {
+       // BD();
         // Se non c'è nessun Thread in esecuzione ma c'e n'è almeno uno nella ready_queue allora  carico un thread
         if (current_thread == NULL) {
+            //BE();
             current_thread = thread_dequeue(&ready_queue);
             process_TOD=getTODLO();
            // current_thread->elapsedTime = 0;
@@ -125,7 +124,7 @@ void scheduler() {
 
 //        }
         // carico lo stato del thread nel processore
-          
+        //  setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
         LDST(&(current_thread->t_s));
     }
 }
