@@ -151,6 +151,8 @@ unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	sender->elapsed_time = 0;
 	//waiting_TOD=getTODLO();
 	thread_outqueue(sender);
+	if(sender->t_status==T_STATUS_READY)
+		soft_block_count++;
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
 	return FALSE;
 }
@@ -173,6 +175,8 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	struct list_head* queue;
 	queue=select_io_queue(dev_type,dev_numb);
 	thread_outqueue(sender);
+	if(sender->t_status==T_STATUS_READY)
+		soft_block_count++;
 	thread_enqueue(sender , queue );
 	memaddr *base = (memaddr *) ( *(msg_ssi+1));
 	*(base) = *(msg_ssi+2);
