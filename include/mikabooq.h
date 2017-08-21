@@ -101,7 +101,6 @@ int thread_in_queue(struct list_head *head, struct tcb_t* this);
 
 #define for_each_thread_in_q(pos, queue) \
 	list_for_each_entry(pos, queue, t_sched)
-
 /*************************** MSG QUEUE ************************/
 
 /* initialize the data structure */

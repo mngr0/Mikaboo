@@ -21,7 +21,9 @@
 #include <libuarm.h>
 
 #include "nucleus.h"
-#include "p2test.h"
+
+#define QPAGE FRAME_SIZE
+#define TERM0ADDR               0x24C
 
 static struct tcb_t* printid;
 
@@ -69,6 +71,7 @@ static inline void CSIN() {
     msgrecv(csid, NULL);
 }
 
+#define CSOUT msgsend(csid, NULL)
 
 void cs_thread(void) {
     struct tcb_t* sender;
@@ -79,6 +82,7 @@ void cs_thread(void) {
     }
 }
 
+#define SYNCCODE 0x01000010
 
 void p2(), p3(), p4(), p5(), p6(), p7(), p8();
 
@@ -91,21 +95,21 @@ uintptr_t p5sys = 0;
 uintptr_t p5send = 0;
 
 void test(void) {
-    ttyprintstring(TERM0ADDR, "starting\n");
+    ttyprintstring(TERM0ADDR, "NUCLEUS TEST: starting...\n");
     STST(&tmpstate);
     stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) tty0out_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid = create_thread(&tmpstate);
-    tty0print("first msg\n");
+    tty0print("NUCLEUS: first msg printed by tty0out_thread\n");
     testt = get_mythreadid();
 
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) cs_thread;
     csid = create_process(&tmpstate);
-    tty0print("cs\n");
-    
+    tty0print("NUCLEUS: critical section thread started\n");
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -115,7 +119,7 @@ void test(void) {
     msgrecv(p2t, NULL);
 
     tty0print("p2 completed\n");
-    
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -124,7 +128,7 @@ void test(void) {
     msgrecv(p3t, NULL);
 
     tty0print("p3 completed\n");
-    
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -141,7 +145,7 @@ void test(void) {
         tty0print("p4 errno ok\n");
     }
     tty0print("p4 completed\n");
-    
+
     CSIN();
     tmpstate.sp = (stackalloc -= QPAGE);
     CSOUT;
@@ -185,6 +189,8 @@ void test(void) {
     HALT();
 }
 
+#define MINLOOPTIME             10000
+#define LOOPNUM                 10000
 
 void p2(void) {
     struct tcb_t* p1t;
@@ -226,12 +232,14 @@ void p2(void) {
 
     panic("p2 survived TERMINATE_THREAD\n");
 }
-    cputime time1, time2;
+
+#define PSEUDOCLOCK 100000
+#define NWAIT 10
 
 void p3(void) {
     tty0print("p3 started\n");
 
-
+    cputime time1, time2;
     int i;
     time1 = getTODLO();
     for (i = 0; i < NWAIT; i++) {
@@ -351,6 +359,7 @@ void p5s(void) {
     }
 }
 
+#define BADADDR 0xFFFFFFFF
 
 void p5(void) {
     state_t mgrstate;
@@ -458,6 +467,7 @@ void p8(void) {
     panic("p8 survived TERMINATE_PROCESS\n");
 }
 
+#define NGRANDCHILDREN 3
 
 void p8child() {
     int i;

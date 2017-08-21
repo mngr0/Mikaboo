@@ -36,10 +36,12 @@ void save_state(state_t *from, state_t *to){
 
 //mette un thread nella waitqueue
 void put_thread_sleep(struct tcb_t* t){
+		//tolgo il thread 
 		thread_outqueue(t);
+		//e lo metto in attesa
 		thread_enqueue(t,&wait_queue);
+		//aggiorno i tempi
 		current_thread->cpu_time+=getTODLO()-process_TOD;
-
 		if(t==current_thread){
 			current_thread=NULL;
 		}
@@ -48,7 +50,9 @@ void put_thread_sleep(struct tcb_t* t){
 }
 //sveglio un thread e lo metto nella readyqueue
 void wake_me_up(struct tcb_t* sleeper){
+	//tolgo il thread dalla coda nella quale era in attesa
 	thread_outqueue(sleeper);
+	//e lo metto ready
 	thread_enqueue(sleeper,&ready_queue);		
 	sleeper->t_status=T_STATUS_READY;	
 	soft_block_count--;
@@ -119,7 +123,9 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 //controlla che il thread al quale si invia/si riceve un messaggio sia vivo
 void check_thread_alive(struct tcb_t * t,int cause){
 	if(t!=NULL){
+		//se il processo è morto
 		if(t->t_status == T_STATUS_NONE){
+			//controllo il tipo di errore
 			switch(cause){
 				case SYS_SEND:
 					t->err_numb=ERR_SEND_TO_DEAD;
@@ -130,6 +136,7 @@ void check_thread_alive(struct tcb_t * t,int cause){
 				default:
 					break;
 			}
+			//ho mandato/ricevuto da un morto, non devo continuare con il codice principale
 			scheduler();
 		}
 	}
@@ -138,7 +145,6 @@ void check_thread_alive(struct tcb_t * t,int cause){
 
 //gestione system calle breaking point
 void sys_bp_handler(){
-	//setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
 	//salvo lo stato del thread corrente
 	save_state(sysbp_old, &current_thread->t_s);
 	//mi salvo i vari campi che mi serviranno
@@ -146,9 +152,7 @@ void sys_bp_handler(){
 	unsigned int a0 = sysbp_old->a1;
 	struct tcb_t* a1 =(struct tcb_t *) sysbp_old->a2;
 	uintptr_t a2 = sysbp_old->a3;
-
 	// Se l'eccezione è di tipo System call 
-
 	if(cause==EXC_SYSCALL){
     	// Se il processo è in kernel mode gestisce adeguatamente 
 		if( (current_thread->t_s.cpsr & STATUS_SYS_MODE) == STATUS_SYS_MODE){
@@ -201,7 +205,6 @@ void sys_bp_handler(){
 					}
 					break;
 				default:
-				  
 				    //se hanno un sysmgr adeguato
 				    if(current_thread->t_pcb->sys_mgr != NULL) {
 				    	sys_send_msg(current_thread,current_thread->t_pcb->sys_mgr,(uintptr_t)&(current_thread->t_s));
@@ -219,6 +222,7 @@ void sys_bp_handler(){
 		else if((current_thread->t_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE){
 			//se è una send o una recv
 		    if((a0==SYS_RECV)||(a0==SYS_SEND)){
+		    	//viene gestito dal program manager se abilitato
 	            if(current_thread->t_pcb->prg_mgr != NULL) {
 	                save_state(sysbp_old,pgmtrap_old);
 	                pgmtrap_old->CP15_Cause = CAUSE_EXCCODE_SET(pgmtrap_old->CP15_Cause, EXC_RESERVEDINSTR);
@@ -231,6 +235,7 @@ void sys_bp_handler(){
 	        }
 	         //se è compresa tra i servizi dichiarati   
 	        else if(a0<MAX_REQUEST_VALUE){
+	        	//viene gestito dal sys manager se dichiarato
 				if(current_thread->t_pcb->sys_mgr != NULL) {
 			    	sys_send_msg(current_thread,current_thread->t_pcb->sys_mgr,(uintptr_t)&(current_thread->t_s));
 			    	put_thread_sleep(current_thread);
@@ -247,6 +252,6 @@ void sys_bp_handler(){
 		//devo fare qualcosa di particolare?
 		;
 	}
-	//richiamo il mio amato scheduler
+	//richiamo lo scheduler
 	scheduler();
 }

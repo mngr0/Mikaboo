@@ -33,11 +33,7 @@ int main() {
 	INIT_LIST_HEAD(&ready_queue);
 	INIT_LIST_HEAD(&wait_queue);
 	INIT_LIST_HEAD(&wait_pseudo_clock_queue);
-    // Settaggio delle quattro aree, ogni area:
-    //   - imposta il pc con la funzione nel nucleo che deve gestire le eccezioni di questo tipo
-    //   - imposta il sp al RAMTOP
-    //  - imposta il registro di stato a mascherare tutti gli interrupts, disattivare la virtual memory, e passa in kernelmode.
-
+	//inizializzo le 4 aree di uarm
 	initArea(INT_NEWAREA, (memaddr) int_handler);
 	initArea(TLB_NEWAREA, (memaddr) tlb_handler);
 	initArea(PGMTRAP_NEWAREA, (memaddr) pgm_handler);
@@ -64,7 +60,7 @@ int main() {
 
 
 	//creo processo figlio del ssi
-	 struct pcb_t* proc_test=proc_alloc(starting_process);
+	struct pcb_t* proc_test=proc_alloc(starting_process);
 
 	struct tcb_t* thread_test=thread_alloc(proc_test);
 	if (thread_test==NULL){
@@ -80,12 +76,14 @@ int main() {
 	//assegno valore di SP
 	thread_test->t_s.sp=RAM_TOP - (2*FRAME_SIZE);
 
+	//incodo i thread nella ready queue
 	thread_enqueue((struct tcb_t* )SSI,&ready_queue);
 	thread_enqueue(thread_test,&ready_queue);
 	//aggiorno il numero di thread eseguiti
 	thread_count=2;
-	//chiamo lo scheduler.Il controllo non tornerà mai qua.
+	//chiamo lo scheduler.
 	scheduler();
+	//Il controllo non tornerà mai qua.
 	return 0;
 }
 

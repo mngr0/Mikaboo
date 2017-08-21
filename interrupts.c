@@ -2,14 +2,8 @@
 #include "scheduler.h"
 #include "exceptions.h"
 #include "interrupts.h"
-state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
-void CA(){}
-void CB(){}
-void CC(){}
-void CD(){}
-void CE(){}
-void CF(){}
+state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
 
 
@@ -19,11 +13,10 @@ struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) 
 }
 //gestisco gli interrupt
 void int_handler(){
-	//setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
-
 	//devo ritornare all' istruzione recedente siccome gli interrupt vengono catturati dopo l' incremento del pc
 	int_old->pc -= 4;
 	if(current_thread != NULL){
+		current_thread->cpu_time+=getTODLO()-process_TOD;
 		save_state(int_old, &current_thread->t_s);
 	}
 	//guardo la causa dell' interrupt
@@ -40,7 +33,7 @@ void int_handler(){
 	else if (CAUSE_IP_GET(cause, IL_TAPE)){
 		device_handler(IL_TAPE);
 	}
-	//network 
+	//ethernet
 	else if (CAUSE_IP_GET(cause, IL_ETHERNET)){
 		device_handler(IL_ETHERNET);
 	}
@@ -75,20 +68,15 @@ int get_priority_dev(memaddr* line){
 	}
 	return -1;
 }
-
-
+//se è finito il time slice, rincodo il thread
 void timer_handler(){
-
 	if (is_time_slice()){
-		//CB();
 		if(current_thread!=NULL){
-		//	CC();
-			thread_enqueue(current_thread,&ready_queue);
-		//	CD();
-			current_thread=NULL;
-		//	CE();
-		}
-	}	
+				thread_enqueue(current_thread,&ready_queue);
+				current_thread=NULL;	
+			}
+		
+	}
 }
 
 //manda un segnale di acknowledge al thread che è in attesa da un device
