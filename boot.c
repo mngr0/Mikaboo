@@ -8,14 +8,19 @@
 
 void * SSI;
 
-
+void init_dev_ctrl(){
+    int i;
+    for (i=0;i<(DEV_USED_INTS+1)*DEV_PER_INT;i++){
+        INIT_LIST_HEAD(&device_list[i]);
+    }
+}
 //inizializza le aree di memoria (assioma)
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
 	/* Memorizza il contenuto attuale del processore in newArea */
 	STST(newArea);
 	/* Setta pc alla funzione che gestirà l'eccezione */
-	newArea->pc = newArea->v6=handler;
+	newArea->pc =handler;
 	/* Setta sp a RAMTOP */
 	newArea->sp = RAM_TOP;
 	/* Setta il registro di Stato per mascherare tutti gli interrupt e si mette in kernel-mode. */

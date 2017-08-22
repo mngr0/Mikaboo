@@ -26,7 +26,7 @@ void check_death(struct tcb_t* t_victim){
 }
 
 //uccide thread
-void exterminate_thread(struct pcb_t * victim){
+void __exterminate_thread(struct pcb_t * victim){
 	//elimino ogni thread del processo
     while (!list_empty(&victim->p_threads)){
     	//controllo che non ci siano figli che aspettano un messaggio da un defunto
@@ -44,21 +44,21 @@ void exterminate_thread(struct pcb_t * victim){
     }
 }
 //uccide un processo e tutta la sua stirpe
-void exterminate_proc(struct pcb_t * victim){
+void __exterminate_proc(struct pcb_t * victim){
 	//uccido tutti i suoi thread
-	exterminate_thread(victim);
+	__exterminate_thread(victim);
 	struct pcb_t * temp;
 	//per direttive iniziali, non possono esistere figli senza il padre, l'unico accettato è il root
 	while (!list_empty(&victim->p_children)){
 		temp=proc_firstchild(victim);
 		//mi richiamo ricorsivamente sui figli
-		exterminate_proc(temp);
+		__exterminate_proc(temp);
 	}
 	proc_delete(victim);
 }
 //chiama la vera funzione killer del processo
 unsigned int ssi_terminate_process(struct tcb_t* sender){
-	exterminate_proc(sender->t_pcb);
+	__exterminate_proc(sender->t_pcb);
 	return FALSE;
 }
 //elimina un thread e in caso che non ci siano più thread di quel processo, uccide la sua stirpe
@@ -71,7 +71,7 @@ unsigned int ssi_terminate_thread(struct tcb_t* sender){
 	thread_free(sender);
 	//se non ci sono altri thread, allora elimino pure il processo che ha generato il thread
 	if(list_empty(&parent->p_threads)){
-		exterminate_proc(parent);
+		__exterminate_proc(parent);
 	}
 	//aggiorno numero thread
 	thread_count--;

@@ -6,12 +6,7 @@ unsigned int slice_TOD = 0;
 unsigned int last_TOD=0;
 
 //inizializzazione liste di attesa dei device
-void init_dev_ctrl(){
-    int i;
-    for (i=0;i<(DEV_USED_INTS+1)*DEV_PER_INT;i++){
-        INIT_LIST_HEAD(&device_list[i]);
-    }
-}
+
 
 //se è terminato o meno il time slice
 int is_time_slice(){

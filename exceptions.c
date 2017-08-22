@@ -79,7 +79,6 @@ void tlb_handler(){
 }
 
 void pgm_handler(){
-    //gestione tempi
     if(current_thread != NULL){
         if(current_thread->t_pcb->prg_mgr!=NULL){
         	//salvo lo stato della chiamata
