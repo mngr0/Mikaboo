@@ -57,6 +57,27 @@ void wake_me_up(struct tcb_t* sleeper){
 	sleeper->t_status=T_STATUS_READY;	
 	soft_block_count--;
 }
+//controlla che il thread al quale si invia/si riceve un messaggio sia vivo
+void check_thread_alive(struct tcb_t * t,int cause){
+	if(t!=NULL){
+		//se il processo è morto
+		if(t->t_status == T_STATUS_NONE){
+			//controllo il tipo di errore
+			switch(cause){
+				case SYS_SEND:
+					t->err_numb=ERR_SEND_TO_DEAD;
+					break;
+				case SYS_RECV:
+					t->err_numb=ERR_RECV_FROM_DEAD;
+					break;
+				default:
+					break;
+			}
+			//ho mandato/ricevuto da un morto, non devo continuare con il codice principale
+			scheduler();
+		}
+	}
+}
 //se viene chiamato il tlb handler
 void tlb_handler(){
 	if(current_thread!= NULL){
@@ -119,27 +140,7 @@ void sys_send_msg(struct tcb_t* sender,struct tcb_t* receiver,unsigned int msg){
 	}
 }
 
-//controlla che il thread al quale si invia/si riceve un messaggio sia vivo
-void check_thread_alive(struct tcb_t * t,int cause){
-	if(t!=NULL){
-		//se il processo è morto
-		if(t->t_status == T_STATUS_NONE){
-			//controllo il tipo di errore
-			switch(cause){
-				case SYS_SEND:
-					t->err_numb=ERR_SEND_TO_DEAD;
-					break;
-				case SYS_RECV:
-					t->err_numb=ERR_RECV_FROM_DEAD;
-					break;
-				default:
-					break;
-			}
-			//ho mandato/ricevuto da un morto, non devo continuare con il codice principale
-			scheduler();
-		}
-	}
-}
+
 
 
 //gestione system calle breaking point
@@ -248,7 +249,6 @@ void sys_bp_handler(){
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
-		//devo fare qualcosa di particolare?
 		;
 	}
 	//richiamo lo scheduler

@@ -13,7 +13,7 @@ struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) 
 }
 //gestisco gli interrupt
 void int_handler(){
-	//devo ritornare all' istruzione recedente siccome gli interrupt vengono catturati dopo l' incremento del pc
+	//devo ritornare all' istruzione precedente siccome gli interrupt vengono catturati dopo l' incremento del pc
 	int_old->pc -= 4;
 	if(current_thread != NULL){
 		current_thread->cpu_time+=getTODLO()-process_TOD;
