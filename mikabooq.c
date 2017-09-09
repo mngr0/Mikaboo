@@ -155,12 +155,6 @@ void thread_enqueue(struct tcb_t *new, struct list_head *queue){
 	}
 }
 
-void thread_enqueue_head(struct tcb_t *new, struct list_head *queue){
-	if(new!=NULL && queue!=NULL){
-		list_add_tail(&new->t_sched,queue); //aggiungo in coda per avere un ordine corretto quando li vado a prendere
-	}
-}
-
 struct tcb_t *thread_qhead(struct list_head *queue){
 	if(queue==NULL){
 		return NULL;
