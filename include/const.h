@@ -6,7 +6,7 @@
 //numero massimo
 #define MAXPROC 20
 #define MAXTHREAD 30
-#define MAXMSG 230
+#define MAXMSG 500
 //ERR_NUMBER DEFINITI
 #define NO_ERR 0
 #define ERR_SEND_TO_DEAD 1

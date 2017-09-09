@@ -31,7 +31,7 @@ void initArea(memaddr area, memaddr handler){
 
 //Boot del nostro programma
 int main() {
-	//inizializzazione code device
+	//inizializzazione code devicev       
 	init_dev_ctrl();
 	current_thread=NULL;
 	//Inizializzo liste 

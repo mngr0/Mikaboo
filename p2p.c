@@ -43,7 +43,7 @@ void ttyNout_thread() {
 
     uintptr_t payload;
     struct tcb_t* sender;
-    unsigned int term;// =  TERM0ADDR + (0x10 *n);
+    unsigned int term;
     msgrecv(NULL,&term);
     for (;;) {
         sender = msgrecv(NULL, &payload);
@@ -117,7 +117,7 @@ struct tcb_t * call_create_process(memaddr function){
 
 void test2(){
 
-   struct tct_b* parent=  msgrecv(NULL, NULL);
+   struct tcb_t* parent=  msgrecv(NULL, NULL);
     p2t = call_create_process((memaddr)p2);
     msgsend(p2t,SYNCCODE);
     msgrecv(p2t, NULL);
@@ -127,7 +127,7 @@ void test2(){
 }
 
 void test3(){
-    struct tct_b* parent= msgrecv(NULL, NULL);
+    struct tcb_t* parent= msgrecv(NULL, NULL);
     p3t = call_create_process((memaddr)p3);
     msgrecv(p3t, NULL);
     ttyNprint(2,"p3 completed\n");
@@ -136,7 +136,7 @@ void test3(){
 }
 
 void test4(){
-    struct tct_b* parent= msgrecv(NULL, NULL);
+    struct tcb_t* parent= msgrecv(NULL, NULL);
     p4t = call_create_process((memaddr)p4);
     msgsend(p4t, NULL);
     msgrecv(p4t, NULL);
@@ -154,7 +154,7 @@ void test4(){
 
 
 void test5(){
-    struct tct_b* parent= msgrecv(NULL, NULL);
+    struct tcb_t* parent= msgrecv(NULL, NULL);
     p5t = call_create_process((memaddr)p5);
     msgsend(p5t, NULL);
     msgrecv(p5t, NULL);
@@ -169,7 +169,7 @@ void test5(){
 }
 
 void test6(){
-    struct tct_b* parent= msgrecv(NULL, NULL);
+    struct tcb_t* parent=msgrecv( NULL, NULL);
     p6t = call_create_process((memaddr)p6);
     ttyNprint(5,"p6 completed\n");
     msgsend(parent,SYNCCODE);
@@ -177,7 +177,7 @@ void test6(){
 }
 
 void test7(){
-    struct tct_b* parent= msgrecv(NULL, NULL);
+    struct tcb_t* parent= msgrecv( NULL, NULL);
     p7t = call_create_process((memaddr)p7);
     ttyNprint(6,"p7 completed\n");
     msgsend(parent,SYNCCODE);
@@ -186,33 +186,67 @@ void test7(){
 
 
 void test8(){
-    struct tct_b* parent= msgrecv(NULL, NULL);
+    struct tcb_t* parent= msgrecv(NULL, NULL);
     p8t = call_create_process((memaddr)p8);
     ttyNprint(7,"p8 completed\n");
     msgsend(parent,SYNCCODE);
     terminate_thread();
 }
 
-void AA(){}
+void check_terms(unsigned int* terms){
+    struct tcb_t* senderu;
+    int i,r;
+    struct tcb_t* myself=get_mythreadid();
+    for(i=0;i<8;i++){
+        struct {
+            uintptr_t reqtag;
+            devaddr device;
+            uintptr_t command;
+            uintptr_t data1;
+            uintptr_t data2;
+        } req = {DO_IO, TERM0ADDR+ (DEV_REG_SIZE * i), DEV_TTRS_C_TRSMCHAR | ('t' << 8), 0, 0};
+        msgsend(SSI, &req);
+        waitforclock();
+        msgsend(myself,0xf0);
+        senderu=msgrecv(NULL,&r);
+        if(senderu==SSI){
+            (*terms) |=(1<<i);
+            msgrecv(NULL,&r);
+            ttyprintstring(TERM0ADDR+ (DEV_REG_SIZE * i), "erminal open\n");
+        }
+    }
+}
 
 void create_printerN(int n){
-    AA();
     tmpstate.sp = (stackalloc -= QPAGE);
     tmpstate.pc = (memaddr) ttyNout_thread;
     tmpstate.cpsr = STATUS_ALL_INT_ENABLE(tmpstate.cpsr);
     printid[n] = create_thread(&tmpstate);
-    msgsend(printid[n], TERM0ADDR+ (0x10 * n));
-    ttyNprint(n,"terminal open\n");
+    msgsend(printid[n], TERM0ADDR+ (DEV_REG_SIZE * n));
+    ttyNprint(n,"printer thread on\n");
 }
 
-
+    unsigned int terms;
 void test(void) {
-    ttyprintstring(TERM0ADDR, "PARALLEL TEST!\n");
+    ttyprintstring(TERM0ADDR, "Parallel Test\n");
     STST(&tmpstate);
     stackalloc = (tmpstate.sp + (QPAGE - 1)) & (~(QPAGE - 1));
     int j;
+
+    check_terms(&terms);
+
     for(j=0;j<8;j++){
-        create_printerN(j);
+        if( (terms)&(1<<j)){
+            create_printerN(j);
+        }
+        else{
+            printid[j]=printid[0];
+            char c[2];
+            c[0]=j+'0';
+            c[1]=0;
+            ttyNprint(j,(char *)&c);
+            ttyNprint(j,": terminal redirected\n");
+        }
     }
 
     testt = get_mythreadid();
@@ -322,7 +356,8 @@ void p2(void) {
 
     panic("p2 survived TERMINATE_THREAD\n");
 }
-
+void AA(){}
+void AB(){}
 cputime time1, time2,ptimePRE,ptimePOST,waste[NWAIT];
 void p3(void) {
     ttyNprint(2,"p3 started\n");
@@ -330,15 +365,17 @@ void p3(void) {
     
     int i;
     time1 = getTODLO();
-    
+    //time2=time1;
     for (i = 0; i < NWAIT; i++) {
         ptimePRE=getTODLO();
+        AA();
         waitforclock();
         ptimePOST=getTODLO();
+        //time2+=ptimePOST-ptimePRE;
         waste[i]=(ptimePOST - ptimePRE)-PSEUDOCLOCK;
+        AB();
     }
     time2 = getTODLO();
-
     if ((time2 - time1) < (PSEUDOCLOCK * (NWAIT - 1))) {
         panic("WAITCLOCK too small\n");
     } else if ((time2 - time1) > (PSEUDOCLOCK * (NWAIT + 5))) {

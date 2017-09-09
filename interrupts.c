@@ -38,11 +38,11 @@ void int_handler(){
 		device_handler(IL_ETHERNET);
 	}
     //printer
-	else if (CAUSE_IP_GET(cause, INT_PRINTER)){
+	else if (CAUSE_IP_GET(cause, IL_PRINTER)){
 		device_handler(IL_PRINTER);
 	} 
     //terminal 
-	else if (CAUSE_IP_GET(cause, INT_TERMINAL)){
+	else if (CAUSE_IP_GET(cause, IL_TERMINAL)){
 		terminal_handler();
 	}
 	else{
@@ -75,8 +75,10 @@ void timer_handler(){
 				thread_enqueue(current_thread,&ready_queue);
 				current_thread=NULL;	
 			}
-		
 	}
+	// il controllo per thread che attendono la fine dello pseudo_clock è posizionato nello scheduler
+	// per avere maggiore coerenza nella misura dei tempi (in particolare nell' aggiornamento del campo elapsed_time)
+	// una chiamata allo scheduler viene fatta ogni volta che ricevo un interrupt
 }
 
 //manda un segnale di acknowledge al thread che è in attesa da un device

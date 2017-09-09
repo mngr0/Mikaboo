@@ -1,3 +1,4 @@
+#include <uARMconst.h>
 #include "mikabooq.h"
 #include "ssi.h"
 #include "nucleus.h"
@@ -149,7 +150,6 @@ void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
 unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	*reply=(unsigned int)NULL;
 	sender->elapsed_time = 0;
-	//waiting_TOD=getTODLO();
 	thread_outqueue(sender);
 	if(sender->t_status==T_STATUS_READY)
 		soft_block_count++;
@@ -178,8 +178,26 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	if(sender->t_status==T_STATUS_READY)
 		soft_block_count++;
 	thread_enqueue(sender , queue );
-	memaddr *base = (memaddr *) ( *(msg_ssi+1));
-	*(base) = *(msg_ssi+2);
+	memaddr *base;
+	switch (dev_type){
+		case IL_DISK:
+			break;
+		case IL_TAPE:
+			break;
+		case IL_ETHERNET:
+			break;
+		case IL_TERMINAL:
+			base = (memaddr *) ( *(msg_ssi+1));
+			*(base) = *(msg_ssi+2);
+			break;
+		case IL_TERMINAL+1:
+			base = (memaddr *) ( *(msg_ssi+1));
+			*(base) = *(msg_ssi+2);
+			break;
+	}
+
+
+
 	return FALSE;
 }
 
