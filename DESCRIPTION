@@ -34,32 +34,28 @@ Caso uno) è finito il time slice e setto il time successivo; caso due) il primo
 Questo avviene perchè essendo una coda fifo che tiene conto dei tempi dei thread necessarriamente, scorrendola i temppi (elapsed time) aumentino; quindi se il primo è maggiore del time slice di conseguenza anche tutti gli altri lo saranno.
 La funzione is_time_slice invece è solo di supporto(al timer handler)e controlla se è finito o meno il timeslice del thread ed è stata inserita in questo file poichè usa delle variabili strettamente locali.
 
-SSI.c si occupa di gestire tutti i servizi che li richiedono e la sua funzione principale è SSI_main_task: controlla se è una richiesta accettabile e in caso affermativo, chiama la funzione corrispondente e inserisce in reply la risposta. Non sempre deve rispondere al messaggio del richiedente del servizio(possono essere pure gli handler o i messaggi di acknowledge a rispondere), e a seconda del valore restituto a ssi_entry viene fatta la send o meno al thread che ha richiesto il servizio.
-I servizi sono abbastanza lineari e non presentano segni degni di nota, vengono gestiti opportunamente il numero di thread totali e di quelli softblockati(rispettivamente nella create e nella exterminate). 
+SSI.c si occupa di gestire tutti i servizi che li richiedono e la sua funzione principale è SSI_main_task: controlla se è una richiesta accettabile e in caso affermativo, chiama la funzione corrispondente e inserisce in reply la risposta.
+Ci sono due possibilità, che main_task restituisca True o False: se la risposta che arriva a ssi_entry è True, allora è l ssi che deve rispondere al thread che ha richiesto al servizio, se la risposta invece è false ci sono varie possibilità:
+se la risposta proviene da ssi_do_io è perchè il messaggio di risposta proviene dal device_handler o terminal_handler;se proviene dal ssi_waitforclock è perchè il messaggio di risposta proviene dal timer_handler;se proviene da un managing è perchè il thread è stato ucciso e quindi non ha bisogna di ricevere una risposta;se proviene da un terminate allora il thread è stato ucciso e non deve ricevere una risposta.
+
 Nel caso di un' assegnazione di un manager viene salvato il tcb_t del manager nel campo dedicato del padre del thread che ha fatto la richiesta.
 Una piccola scelta di progettazione è stata come avviene  l'uccisione dei thread e dei processi. Quando un thread viene terminato ed è l'unico thread del processo, allora anche il processo viene terminato. Se un processo viene terminato, allora anche tutti i suoi thread vengono uccisi. Se un processo è ucciso allora tutti i suoi processi figli vengono uccisi(questo perchè per specifiche di phase 1 non possono esistere processi con padre==NULL escluso il processo root).
+Il numero di thread totali e di quelli softblockati viene controllato dalle funzioni create e exterminate aumentandoli o diminuendoli.
 Nelle funzioni che eliminano processi/thread, vi è pure la chiamata ad una funzione che gestisce casi di errori:la check_death.
 Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thread in attesa di una risposta da questo. Se la risposta è affermativa, setta il loro err_numb e li sveglia con un messaggio inviato dall'SSI.
-Una funzione forse non propriamente lienare è la SSI_do_io: CHECK.
 
+Una funzione che neccessita una spiegazione dettagliata è la SSI_do_io:
+Il dev_type è ottenuto in questo modo:
 unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
-
-sottraggo DEV_REG_START per avere l' offset rispetto all' indirizzo iniziale nei device
-
+poichè sottraggo DEV_REG_START per avere l' offset rispetto all' indirizzo iniziale nei device
 DEV_PER_INT*DEV_REG_SIZE è la dimensione occupata da una tipologia di device, dividendo per DEV_PER_INT*DEV_REG_SIZE ottengo il tipo del device, ma mappato male
-
 sommo DEV_IL_START per avere la stessa mappatura utilizzata da uARM
-
+Per ottenere il dev_numb invece devo eseguire queste operazioni:
 unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE;
-
-dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET è l' offset del inizio del device (non del campo command)
-
+cioè: dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET è l' offset del inizio del device (non del campo command)
 facendo il modulo della divisione per DEV_REG_SIZE*DEV_PER_INT ottengo l' offset nel tipo di device (esempio, Tape 4 o 5), misurato in word
-
 ogni device occupa 2 word, anche se i terminali hanno una word dedicata all' input e una all' output, uso questa particolarità per riconoscere se è stata richiesta una lettura o una scrittura,
-
 DEV_FIELD_SIZE vale 4, (4 byte in una word), ottengo (indice del device)*2, e (indice del device)*2+1 in caso di scrittura su device.
-
 se (in caso di terminale) dev_numb%2==1 allora è scrittura e lo incoderò nella sua coda dedicata. 
 
 
