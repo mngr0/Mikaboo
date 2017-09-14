@@ -138,7 +138,6 @@ unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* 
         return FALSE;
     } else {
         sender->t_pcb->sys_mgr = mgr;
-
         *reply=(unsigned int) NULL;
         return TRUE;
     }
@@ -171,6 +170,7 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 			dev_type+=1;
 		}
 	}
+	//passo da (indice del device)*2 a (indice del device)
 	dev_numb/=2;
 	struct list_head* queue;
 	queue=select_io_queue(dev_type,dev_numb);
