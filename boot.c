@@ -14,18 +14,18 @@ void init_dev_ctrl(){
         INIT_LIST_HEAD(&device_list[i]);
     }
 }
-//inizializza le aree di memoria (assioma)
+//inizializza le aree di memoria
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
-	/* Memorizza il contenuto attuale del processore in newArea */
+	// Memorizza il contenuto attuale del processore in newArea 
 	STST(newArea);
-	/* Setta pc alla funzione che gestirà l'eccezione */
+	// Setta pc alla funzione che gestirà l'eccezione 
 	newArea->pc =handler;
-	/* Setta sp a RAMTOP */
+	// Setta sp a RAMTOP
 	newArea->sp = RAM_TOP;
-	/* Setta il registro di Stato per mascherare tutti gli interrupt e si mette in kernel-mode. */
+	// Setta il registro di Stato per mascherare tutti gli interrupt e si mette in kernel-mode.
 	newArea->cpsr = STATUS_ALL_INT_DISABLE((newArea->cpsr) | STATUS_SYS_MODE);
-	/* Disabilita la memoria virtuale */
+	// Disabilita la memoria virtuale 
 	newArea->CP15_Control =CP15_DISABLE_VM (newArea->CP15_Control);
 }
 

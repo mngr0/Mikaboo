@@ -7,26 +7,18 @@ unsigned int last_TOD=0;
 
 //inizializzazione liste di attesa dei device
 
-void BA(){}
-void BB(){}
-void BC(){}
-void BD(){}
 //se è terminato o meno il time slice
 int is_time_slice(){
     return (SCHED_TIME_SLICE - (getTODLO() - slice_TOD) <= 0);
 }
 //setta il pseudoclock in ogni thread
 void set_pseudo_clock(unsigned int TODLO,int time_until_slice){
-  
     struct tcb_t *iterator=NULL;
     for_each_thread_in_q(iterator,&wait_pseudo_clock_queue){
         iterator->elapsed_time+=TODLO-last_TOD;
-        BD();
     }
-
     while((!list_empty(&wait_pseudo_clock_queue))
         &&( thread_qhead(&wait_pseudo_clock_queue)->elapsed_time>=SCHED_PSEUDO_CLOCK)) {
-        BA();
         struct tcb_t* thread=thread_dequeue(&wait_pseudo_clock_queue);
         if (thread->t_status==T_STATUS_READY){
             thread_enqueue(thread,&ready_queue);
@@ -69,17 +61,13 @@ void ssi_priority(){
         struct tcb_t* iterator=NULL;
         for_each_thread_in_q(iterator,&ready_queue){
             current_thread=thread_dequeue(&ready_queue);
-            BC();
             if(current_thread==SSI)
                 break;
             thread_enqueue(current_thread,&ready_queue);
-            
         }
-        
     }
     else{   
         current_thread = thread_dequeue(&ready_queue);
-        BB();
     }
 }
 //funzione master del file, schedula il processo giusto e controlla i deadlock
@@ -94,7 +82,6 @@ void scheduler() {
         //sono in una situazione di deadlock
         else if (thread_count > 0 && soft_block_count == 0) {
             PANIC(); 
-	
         }
         //in attesa di un interrupt
 	   else if (thread_count > 0 && soft_block_count > 0) { 
@@ -109,7 +96,6 @@ void scheduler() {
             //precedenza all'ssi
             ssi_priority();    
         }
-
         process_TOD=getTODLO();
         LDST(&(current_thread->t_s));
     }
