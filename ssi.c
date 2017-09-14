@@ -163,12 +163,16 @@ unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* 
 }
 
 void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
+	//la risposta è il valode del cputime del thread che lo ha chiesto
 	*reply=sender->cpu_time;
 }
 unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	*reply=(unsigned int)NULL;
+	//azzero il tempo passato dall' inizio dell' attesa
 	sender->elapsed_time = 0;
+	//e lo inserisco nella wait_pseudo_clock_queue
 	thread_outqueue(sender);
+	//potrebbe essere ancora in ready queue, se il time slice è finito prima della receive
 	if(sender->t_status==T_STATUS_READY)
 		soft_block_count++;
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
@@ -206,11 +210,11 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 		case IL_ETHERNET:
 			break;
 		case IL_TERMINAL:
-			base = (memaddr *) ( *(msg_ssi+1));
+			base = (memaddr *) ( dev_reg_com);
 			*(base) = *(msg_ssi+2);
 			break;
 		case IL_TERMINAL+1:
-			base = (memaddr *) ( *(msg_ssi+1));
+			base = (memaddr *) (dev_reg_com);
 			*(base) = *(msg_ssi+2);
 			break;
 	}

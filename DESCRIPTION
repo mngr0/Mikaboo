@@ -35,9 +35,15 @@ Questo avviene perchè essendo una coda fifo che tiene conto dei tempi dei threa
 La funzione is_time_slice invece è solo di supporto(al timer handler)e controlla se è finito o meno il timeslice del thread ed è stata inserita in questo file poichè usa delle variabili strettamente locali.
 
 SSI.c si occupa di gestire tutti i servizi che li richiedono e la sua funzione principale è SSI_main_task: controlla se è una richiesta accettabile e in caso affermativo, chiama la funzione corrispondente e inserisce in reply la risposta.
-Ci sono due possibilità, che main_task restituisca True o False: se la risposta che arriva a ssi_entry è True, allora è l ssi che deve rispondere al thread che ha richiesto al servizio, se la risposta invece è false ci sono varie possibilità:
-se la risposta proviene da ssi_do_io è perchè il messaggio di risposta proviene dal device_handler o terminal_handler;se proviene dal ssi_waitforclock è perchè il messaggio di risposta proviene dal timer_handler;se proviene da un managing è perchè il thread è stato ucciso e quindi non ha bisogna di ricevere una risposta;se proviene da un terminate allora il thread è stato ucciso e non deve ricevere una risposta.
-Viene inoltre fatto un controllo se il thread che deve essere ucciso è in realtà un manager invocando la funzione free_managing: se la risposta è affermativa setta a NULL il campo del pcb_t a cui è assegnato.
+Ci sono due possibilità, che main_task restituisca True o False: 
+se è True: allora l' ssi deve rispondere al thread che ha richiesto il servizio;
+se è False ci sono varie possibilità:
+se era richiesto un do_io allora il messaggio di risposta proviene dal device_handler o terminal_handler;
+se era richiesto un waitforclock allora il messaggio di risposta proviene dal timer_handler
+se era richiesto il set di un manager il thread potrebbe essere stato ucciso e quindi non ha bisogna di ricevere una risposta;
+se era stato richiesto un terminate allora il thread è stato ucciso e non deve ricevere una risposta.
+
+In caso di uccisione di un thread viene inoltre controllato se il thread che deve essere ucciso è in realtà un manager invocando la funzione free_managing: se la risposta è affermativa setta a NULL il campo del pcb_t a cui è assegnato.
 
 Nel caso di un' assegnazione di un manager viene salvato il tcb_t del manager nel campo dedicato del padre del thread che ha fatto la richiesta.
 Una piccola scelta di progettazione è stata come avviene  l'uccisione dei thread e dei processi. Quando un thread viene terminato ed è l'unico thread del processo, allora anche il processo viene terminato. Se un processo viene terminato, allora anche tutti i suoi thread vengono uccisi. Se un processo è ucciso allora tutti i suoi processi figli vengono uccisi(questo perchè per specifiche di phase 1 non possono esistere processi con padre==NULL escluso il processo root).
@@ -46,6 +52,9 @@ Nelle funzioni che eliminano processi/thread, vi è pure la chiamata ad una funz
 Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thread in attesa di una risposta da questo. Se la risposta è affermativa, setta il loro err_numb e li sveglia con un messaggio inviato dall'SSI. 
 
 Una funzione che neccessita una spiegazione dettagliata è la SSI_do_io:
+
+dev_type e dev_numb sono utilizzati per calcolare il device su cui devo operare, tipo e numero
+
 Il dev_type è ottenuto in questo modo:
 unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
 poichè sottraggo DEV_REG_START per avere l' offset rispetto all' indirizzo iniziale nei device
