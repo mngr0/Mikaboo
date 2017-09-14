@@ -11,7 +11,7 @@ Non sempre è l'ssi a dover rispondere al thread che ha invocato il servizio, pu
 In exception.c vi è la gestione degli handler: system, program e tlb. Si trovano al suo interno le funzioni per inviare e ricevere messaggi, per mettere un processo nella ready queue(svegliarlo) o per metterlo nella wait queue(addormentarlo).
 Interrupt.c invece gestisce gli interrupt attraverso inthandler; al suo interno vi è una struttura usata per gestire le code dei device, dei terminali. Vi è anche il controllo sui time slice e la funzione ack gestisce le risposte dei device.
 
-Piccolo inciso che riguarda modifiche effettuate a phase1(mikabooq.c)per poter implementare tutti i servizi richiesti: i processi ora contengono 3 puntatori ai propri manager: system, tlb e prg. Anche i thread possiedono 3 nuovi campi, un error number e due che riguardano i tempi:cpu time esprime il tempo per il quale il thread ha occupato la CPU, mentre elapsed time esprime il tempo di attesa da quando c'è stata una chiamata alla wait for clock.
+Piccolo inciso che riguarda modifiche effettuate a phase1(mikabooq.c)per poter implementare tutti i servizi richiesti: i processi ora contengono tre puntatori ai propri manager: system, tlb e prg. Anche i thread possiedono quattro nuovi campi, un campo è l'error number, un altro è un puntatore ad un pcb in caso che il thread sia un manager mentre gli ultimi due riguardano i tempi:cpu time esprime il tempo per il quale il thread ha occupato la CPU, mentre elapsed time esprime il tempo di attesa da quando c'è stata una chiamata alla wait for clock.
 Inoltre abbiamo creato la reset state che setta tutti i campi di uno state a 0, la thread_in_queue che controlla se un thread è presente in una determinata coda oppure no.
 
 Ora è il momento di guardare in maniera dettagliata i singoli file di questa phase e ancora più precisamente, le singole funzioni.
@@ -37,12 +37,13 @@ La funzione is_time_slice invece è solo di supporto(al timer handler)e controll
 SSI.c si occupa di gestire tutti i servizi che li richiedono e la sua funzione principale è SSI_main_task: controlla se è una richiesta accettabile e in caso affermativo, chiama la funzione corrispondente e inserisce in reply la risposta.
 Ci sono due possibilità, che main_task restituisca True o False: se la risposta che arriva a ssi_entry è True, allora è l ssi che deve rispondere al thread che ha richiesto al servizio, se la risposta invece è false ci sono varie possibilità:
 se la risposta proviene da ssi_do_io è perchè il messaggio di risposta proviene dal device_handler o terminal_handler;se proviene dal ssi_waitforclock è perchè il messaggio di risposta proviene dal timer_handler;se proviene da un managing è perchè il thread è stato ucciso e quindi non ha bisogna di ricevere una risposta;se proviene da un terminate allora il thread è stato ucciso e non deve ricevere una risposta.
+Viene inoltre fatto un controllo se il thread che deve essere ucciso è in realtà un manager invocando la funzione free_managing: se la risposta è affermativa setta a NULL il campo del pcb_t a cui è assegnato.
 
 Nel caso di un' assegnazione di un manager viene salvato il tcb_t del manager nel campo dedicato del padre del thread che ha fatto la richiesta.
 Una piccola scelta di progettazione è stata come avviene  l'uccisione dei thread e dei processi. Quando un thread viene terminato ed è l'unico thread del processo, allora anche il processo viene terminato. Se un processo viene terminato, allora anche tutti i suoi thread vengono uccisi. Se un processo è ucciso allora tutti i suoi processi figli vengono uccisi(questo perchè per specifiche di phase 1 non possono esistere processi con padre==NULL escluso il processo root).
 Il numero di thread totali e di quelli softblockati viene controllato dalle funzioni create e exterminate aumentandoli o diminuendoli.
 Nelle funzioni che eliminano processi/thread, vi è pure la chiamata ad una funzione che gestisce casi di errori:la check_death.
-Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thread in attesa di una risposta da questo. Se la risposta è affermativa, setta il loro err_numb e li sveglia con un messaggio inviato dall'SSI.
+Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thread in attesa di una risposta da questo. Se la risposta è affermativa, setta il loro err_numb e li sveglia con un messaggio inviato dall'SSI. 
 
 Una funzione che neccessita una spiegazione dettagliata è la SSI_do_io:
 Il dev_type è ottenuto in questo modo:

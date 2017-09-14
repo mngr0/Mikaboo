@@ -103,6 +103,7 @@ void thread_init(void){
 		t->t_pcb=NULL;
 		t->t_wait4sender=NULL;
 		t->cpu_time=0;
+		t->who_is_managing=NULL;
 	}
 }
 
@@ -123,6 +124,7 @@ struct tcb_t *thread_alloc(struct pcb_t *process){
 		item_libero->t_status= T_STATUS_READY;
 		item_libero->cpu_time=0;
 		item_libero->err_numb=NO_ERR;
+		item_libero->who_is_managing=NULL;
 		list_add_tail(&item_libero->t_next,&process->p_threads);
 		return item_libero;
 	}
@@ -145,6 +147,7 @@ int thread_free(struct tcb_t *oldthread){
 		oldthread->t_status= T_STATUS_NONE;
 		oldthread->cpu_time=0;
 		oldthread->err_numb=NO_ERR;
+		oldthread->who_is_managing=NULL;
 		return 0;
 	}
 }

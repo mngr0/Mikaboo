@@ -167,6 +167,7 @@ void sys_bp_handler(){
 					check_thread_alive(a1,SYS_SEND);
 					//a0 contiene la costante 1 (messaggio inviato) a1 contiene l'indirizzo del thread destinatario a2 contiene il puntatore al messaggio
 					if(a1->t_pcb->sys_mgr==current_thread ||a1->t_pcb->prg_mgr==current_thread || a1->t_pcb->tlb_mgr==current_thread ){
+						//qui è necessaria solo la wake me up perchè essendo il manager a rispondere al thread, il thread non è in receive
 						wake_me_up(a1);
 					}
 					else{

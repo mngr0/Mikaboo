@@ -34,6 +34,7 @@ struct tcb_t {
 	unsigned int cpu_time;
 	unsigned int elapsed_time;
 	unsigned int err_numb;
+	struct pcb_t* who_is_managing;
 };
 
 struct msg_t {

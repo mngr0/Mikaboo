@@ -5,7 +5,21 @@
 #include "exceptions.h"
 #include "interrupts.h"
 #include "const.h"
-
+//controlla se il thread eliminato è un manager e in caso setta a null il campo adeguato
+void free_managing(struct tcb_t* t_victim){
+	if(t_victim->who_is_managing!=NULL){
+		struct pcb_t* check=t_victim->who_is_managing;
+		if (check->prg_mgr==t_victim){
+			check->prg_mgr==NULL;
+		}
+		else if(check->sys_mgr==t_victim){
+			check->sys_mgr==NULL;
+		}
+		else if(check->tlb_mgr==t_victim){
+			check->tlb_mgr==NULL;
+		}
+	}
+}
 //controlla se ci sono thread nella wait queue che vogliono ricevere un messaggio da uno appena stato ucciso
 void check_death(struct tcb_t* t_victim){
 	struct tcb_t *t_temp=NULL;
@@ -30,6 +44,8 @@ void check_death(struct tcb_t* t_victim){
 void __exterminate_thread(struct pcb_t * victim){
 	//elimino ogni thread del processo
     while (!list_empty(&victim->p_threads)){
+		//controllo che il thread eliminato non sia un manager
+    	free_managing(proc_firstthread(victim));
     	//controllo che non ci siano figli che aspettano un messaggio da un defunto
         check_death(proc_firstthread(victim));
         //aggiorno il softblockcount
@@ -40,8 +56,7 @@ void __exterminate_thread(struct pcb_t * victim){
         thread_outqueue(proc_firstthread(victim));
         thread_free(proc_firstthread(victim));
         //aggiorno il numero di thread
-        thread_count--;
-        
+        thread_count--;  
     }
 }
 //uccide un processo e tutta la sua stirpe
@@ -65,7 +80,9 @@ unsigned int ssi_terminate_process(struct tcb_t* sender){
 //elimina un thread e in caso che non ci siano più thread di quel processo, uccide la sua stirpe
 unsigned int ssi_terminate_thread(struct tcb_t* sender){
 	struct pcb_t* parent=sender->t_pcb;
-	//controllo che un morto non aspetti un messaggio da un morto
+	//controllo che il thread eliminato non sia un manager
+	free_managing(sender);
+	//controllo che un thread non aspetti un messaggio da un morto
 	check_death(sender);
 	//lo tolgo da qualsiasi coda si trovi
 	thread_outqueue(sender);
@@ -110,6 +127,7 @@ unsigned int ssi_prg_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t*
        ssi_terminate_thread(sender);
         return FALSE;
     } else {
+    	mgr->who_is_managing=sender->t_pcb;
         sender->t_pcb->prg_mgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;
@@ -123,7 +141,7 @@ unsigned int ssi_tlb_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t*
      ssi_terminate_thread(sender);
         return FALSE;
     } else {
-
+    	mgr->who_is_managing=sender->t_pcb;
         sender->t_pcb->tlb_mgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;
@@ -137,6 +155,7 @@ unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* 
      ssi_terminate_thread(sender);
         return FALSE;
     } else {
+    	mgr->who_is_managing=sender->t_pcb;
         sender->t_pcb->sys_mgr = mgr;
         *reply=(unsigned int) NULL;
         return TRUE;

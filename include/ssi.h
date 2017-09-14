@@ -2,6 +2,7 @@
 #define SSI_H
 
 //funzioni
+void free_managing(struct tcb_t* t_victim);
 void check_death(struct tcb_t* t_victim);
 void exterminate_thread(struct pcb_t * victim);
 void exterminate_proc(struct pcb_t * victim);
