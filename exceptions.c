@@ -255,6 +255,7 @@ void sys_bp_handler(){
 		}
 	// Altrimenti se l'eccezione è di tipo BreakPoint 
 	} else if(cause == EXC_BREAKPOINT){
+		//TODO
 		;
 	}
 	//richiamo lo scheduler

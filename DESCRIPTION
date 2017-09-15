@@ -53,9 +53,7 @@ Nelle funzioni che eliminano processi/thread, vi è pure la chiamata ad una funz
 Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thread in attesa di una risposta da questo. Se la risposta è affermativa, setta il loro err_numb e li sveglia con un messaggio inviato dall'SSI. 
 
 Una funzione che neccessita una spiegazione dettagliata è la SSI_do_io:
-
 dev_type e dev_numb sono utilizzati per calcolare il device su cui devo operare, tipo e numero
-
 Il dev_type è ottenuto in questo modo:
 unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
 poichè sottraggo DEV_REG_START per avere l' offset rispetto all' indirizzo iniziale nei device
@@ -87,24 +85,21 @@ La send prima di tutto controlla che non si stia inviando ad un morto, successiv
 Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se è disponibile un messaggio dal mittente richiesto. Se c'è un messaggio disponibile va messo nella wait queue, settati i campi e non va avanzato di una wordsize; se invece la msgq_get va a buon fine, carico i vari campi in maniera adeguata e faccio il load del processo.
 Tutti i casi di errore di questa sezione vengono risolti con l'uccisione del thread.
 
+
+
 L'ultimo file che è rimasto da descrivere è interrupts.c e come enuncia il nome, si occupa di gestire tutti gli interrupt che arrivano da parte dei device virtuali di uArm. La funzione principale è int_handler la quale controlla la causa dell'interrupt e a seconda del tipo di interrupt ricevuto chiama la funzione adeguata per poi richiamare lo scheduler e far continuare l'esecuzione del programma.
 Tutti gli interrupt vengono gestiti dal device_handler, escludendo la causa TIMER che viene gestita dal timer_handler, essa viene causata quando finisce un time slice o uno pseudo clock, se è finito il time slice cambio il thread in esecuzione.
 Per la gestione dei device, è necessario leggere lo status dal registro del device che ha causato l' interrupt, rispondergli con un ack, e rispondo al thread richiedente con lo status dell' operazione.
 Il messaggio viene mandato da parte dell' ssi.
 Per individuare il device che ha causato l' interrupt uso CAUSE_IP_GET per il tipo di device, e CDEV_BITMAP_ADDR per l' offset del device.
 Device con offset minore hanno priorità maggiore, ottengo l' offset del device scorrendo una maschera di bit.
-
 Per individuare il thread a cui rispondere abbiamo preparato una coda per ogni device, prendo il primo thread dalla coda giusta.
+Il thread è poi da riportare nella giusta coda di appartenenza (wait o ready), poteva essere in ready queue se il suo timeslice è finito subito dopo la send e il device ha risposto prima che il thread facesse la receive; altrimenti era nella wait queue.
+I terminali hanno una gestione leggermente differente e per questa ragione hanno la loro funzione specifica: oltre ai controlli base dei device vi è pure il controllo se la richiesta è di scrittura o di lettura.
 
-il thread è poi da riportare nella giusta coda (wait o ready)
 
-e la causa TERMINAL che controlla se è stata effettuata una scrittura o una lettura.
-CHECK SE SCENDERE NEI DETTAGLI DEI CONTI
-Sia la device_handler che la terminal_handler utilizzano la funzione ack() che ha lo scopo oltre a rispondere ai thread in attesa(non sempre è l'ssi a rispondere come è già stato accennato sopra)ma anche di incodare il thread nella giusta lista.
 
-Il file è stato adeguatamente commentato, abbiamo deciso di non andare troppo nei dettagli nella presentazione per il semplice motivo che la comprensione del codice è relativamente facile e dove non lo è riteniamo che sia commentato a sufficienza, secondo noi infatti è più importante spiegare il funzionamento generale del programma in una relazione.
-
-Inoltre abbiamo portato un ulteriore test, è esattamente uguale al p2test.c solamente che ogni processo lavora in maniera parallela e su un terminale diverso.
+Inoltre abbiamo portato un ulteriore test: ha le stesse funzioni del test base solamente che ogni funzione è abbinata ad un terminale e in questo modo possono tutti lavorare in maniera parallela e testare anche tutti i terminali.
 
 
 
