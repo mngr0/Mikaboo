@@ -87,6 +87,8 @@ void tlb_handler(){
 			save_state(tlb_old, &(current_thread->t_s));
 			//mando messaggio al manager che verrà svegliato
 			sys_send_msg(current_thread,current_thread->t_pcb->tlb_mgr,(uintptr_t)tlb_old);
+			//setto il t_wait4sender in modo che solo lui possa risvegliarlo
+			current_thread->t_wait4sender=current_thread->t_pcb->tlb_mgr;
 			//metto nella wait queue
 			put_thread_sleep(current_thread);	
 		}
@@ -106,8 +108,11 @@ void pgm_handler(){
             save_state(pgmtrap_old, &current_thread->t_s);
 			//mando messaggio al manager che verrà svegliato
             sys_send_msg(current_thread,current_thread->t_pcb->prg_mgr,(uintptr_t)pgmtrap_old);  
+            //setto il t_wait4sender in modo che solo lui possa risvegliarlo
+            current_thread->t_wait4sender=current_thread->t_pcb->prg_mgr;
             //metto nella wait queue
             put_thread_sleep(current_thread);
+
         }
         else{
         	//se non ha il pgm manager

@@ -73,12 +73,18 @@ se (in caso di terminale) dev_numb%2==1 allora è scrittura e lo incoderò nella
 In exception.c ci sono varie funzioni "di supporto":put_thred_sleep and wake_me_up sono una l'opposto dell'altra: mentre la prima posiziona un thread nella wait_queue e aumenta il numero di softblock la seconda sposta nella ready_queue e diminuisci il numero di processi softblockati.
 Un'altra con un compito nato da una esigenza particolare è check_thread_alive. Mentre la check_death si occupa di svegliare thread che erano in attesa di un thread ucciso, la check_thread_alive controlla che non si voglia inviare ad un thread che non fa parte di quelli vivi: se non esiste, allora il messaggio non viene spedito e nel campo apposito err_numb viene settato l'errore.
 Sys_send_msg si occupa di inviare un messaggio da un thread ad un altro, ma ha una particolarità in più:se il ricevente aspetta già un messaggio dal mittente, non viene incodato in messaggio ma viene direttamente svegliato il thread in attesa.
-Ora è il momento di controllare i tre handler: tlb e pgm controllano che il rispettivo thread sia abilitato e in caso affermativo, mettono nella wait queue il thread corrente e svegliano il manager.
-La sys_bp_handler è la funzione cuore del file:essa viene invocata quando un thread richiede un servizio o una system call(send recv).
-E' necessario quindi controllare i permessi del thread: se è in user mode e richiede una system call, deve essere invocato il suo program manager, se è richiesto un servizio, il system manager; se è in kernel mode invece, può mandare direttamente send e recv.
-La send prima di tutto controlla che non si stia inviando ad un morto, successivamente CHECK IF e altrimenti si manda la send con la funzione apposita e si avanza di una word size per evitare di rientrare nel codice della syscall.
-Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se ha ricevuto o meno il messaggio. Se non lo ha ricevuto va messo nella wait queue, settati i campi e non va avanzato di una wordsize in modo che poi ritorni nel codice della syscall; se invece la msgq_get va a buon fine invece, carico i vari campi in maniera adeguata e faccio il load del processo.
-Tutti i casi di errore di questa sezione vengono risolti con l'uccisione del processo.
+Ora è il momento di descrivere i tre handler: 
+tlb_handler (gestisce i tlb miss) e pgm_handler (gestisce le trap)
+vengono chiamati quando si verifica un tlb miss o una trap,
+controllano se il causante ha definito un manager e in caso affermativo,
+mettono nella wait queue il thread corrente, svegliando il manager.
+Il thread è risvegliabile solo dal manager, ma non ha fatto una receive, sarà il manager a occuparsi di risolvere la trap o caricare la pagina richiesta.
+
+Il terzo handler, sys_bp_handler, è la funzione cuore del file:essa viene invocata quando un thread richiede un servizio o una system call(send recv).
+E' necessario quindi controllare i permessi del thread: se è in user mode e richiede una system call, deve essere invocato il suo program manager; se è richiesto un servizio, il system manager; se è in kernel mode invece, può mandare direttamente send e recv.
+La send prima di tutto controlla che non si stia inviando ad un morto, successivamente controlla se il messaggio è la risposta di un manager Uper risvegliare il thread) e altrimenti si manda la send con la funzione apposita e si avanza di una word size per evitare di rientrare nel codice della syscall.
+Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se è disponibile un messaggio dal mittente richiesto. Se c'è un messaggio disponibile va messo nella wait queue, settati i campi e non va avanzato di una wordsize; se invece la msgq_get va a buon fine, carico i vari campi in maniera adeguata e faccio il load del processo.
+Tutti i casi di errore di questa sezione vengono risolti con l'uccisione del thread.
 
 L'ultimo file che è rimasto da descrivere è interrupts.c e come enuncia il nome, si occupa di gestire tutti gli interrupt che arrivano da parte di uArm. La funzione principale è int_handler la quale controlla la causa dell'interrupt e a seconda del tipo di interrupt ricevuto chiama la funzione adeguata per poi richiamare lo scheduler e far continuare l'esecuzione del programma.
 Tutti gl interrupt vengono esclusi dal device_handler, escludendo la causa TIMER che viene gestita dal timer_handler e controlla se è finito o meno il time_slice, e la causa TERMINAL che ha il controllo se è stata effettuata una scrittura o una lettura.
