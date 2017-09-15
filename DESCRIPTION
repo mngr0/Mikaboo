@@ -1,3 +1,4 @@
+TODO CHECK TEMPI
 Il nostro progetto è composto da 6 file principali, più ovviamente i file di test che dovranno essere svolti.
 Ogni file C ha il corrispondente header dove sono descritte le funzioni.
 Il file const.h contiene tutte le variabili globali che verranno utilizzate nel programma e tutti i #define utili alla comprensione del codice.
@@ -81,13 +82,23 @@ mettono nella wait queue il thread corrente, svegliando il manager.
 Il thread è risvegliabile solo dal manager, ma non ha fatto una receive, sarà il manager a occuparsi di risolvere la trap o caricare la pagina richiesta.
 
 Il terzo handler, sys_bp_handler, è la funzione cuore del file:essa viene invocata quando un thread richiede un servizio o una system call(send recv).
-E' necessario quindi controllare i permessi del thread: se è in user mode e richiede una system call, deve essere invocato il suo program manager; se è richiesto un servizio, il system manager; se è in kernel mode invece, può mandare direttamente send e recv.
+E' necessario quindi controllare i permessi del thread: se è in user mode e richiede una system call, deve essere invocato il suo system manager; se è provocata una trap, il program manager; se è in kernel mode invece, può mandare direttamente send e recv.
 La send prima di tutto controlla che non si stia inviando ad un morto, successivamente controlla se il messaggio è la risposta di un manager Uper risvegliare il thread) e altrimenti si manda la send con la funzione apposita e si avanza di una word size per evitare di rientrare nel codice della syscall.
 Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se è disponibile un messaggio dal mittente richiesto. Se c'è un messaggio disponibile va messo nella wait queue, settati i campi e non va avanzato di una wordsize; se invece la msgq_get va a buon fine, carico i vari campi in maniera adeguata e faccio il load del processo.
 Tutti i casi di errore di questa sezione vengono risolti con l'uccisione del thread.
 
-L'ultimo file che è rimasto da descrivere è interrupts.c e come enuncia il nome, si occupa di gestire tutti gli interrupt che arrivano da parte di uArm. La funzione principale è int_handler la quale controlla la causa dell'interrupt e a seconda del tipo di interrupt ricevuto chiama la funzione adeguata per poi richiamare lo scheduler e far continuare l'esecuzione del programma.
-Tutti gl interrupt vengono esclusi dal device_handler, escludendo la causa TIMER che viene gestita dal timer_handler e controlla se è finito o meno il time_slice, e la causa TERMINAL che ha il controllo se è stata effettuata una scrittura o una lettura.
+L'ultimo file che è rimasto da descrivere è interrupts.c e come enuncia il nome, si occupa di gestire tutti gli interrupt che arrivano da parte dei device virtuali di uArm. La funzione principale è int_handler la quale controlla la causa dell'interrupt e a seconda del tipo di interrupt ricevuto chiama la funzione adeguata per poi richiamare lo scheduler e far continuare l'esecuzione del programma.
+Tutti gli interrupt vengono gestiti dal device_handler, escludendo la causa TIMER che viene gestita dal timer_handler, essa viene causata quando finisce un time slice o uno pseudo clock, se è finito il time slice cambio il thread in esecuzione.
+Per la gestione dei device, è necessario leggere lo status dal registro del device che ha causato l' interrupt, rispondergli con un ack, e rispondo al thread richiedente con lo status dell' operazione.
+Il messaggio viene mandato da parte dell' ssi.
+Per individuare il device che ha causato l' interrupt uso CAUSE_IP_GET per il tipo di device, e CDEV_BITMAP_ADDR per l' offset del device.
+Device con offset minore hanno priorità maggiore, ottengo l' offset del device scorrendo una maschera di bit.
+
+Per individuare il thread a cui rispondere abbiamo preparato una coda per ogni device, prendo il primo thread dalla coda giusta.
+
+il thread è poi da riportare nella giusta coda (wait o ready)
+
+e la causa TERMINAL che controlla se è stata effettuata una scrittura o una lettura.
 CHECK SE SCENDERE NEI DETTAGLI DEI CONTI
 Sia la device_handler che la terminal_handler utilizzano la funzione ack() che ha lo scopo oltre a rispondere ai thread in attesa(non sempre è l'ssi a rispondere come è già stato accennato sopra)ma anche di incodare il thread nella giusta lista.
 
