@@ -3,6 +3,9 @@
 
 #include "nucleus.h"
 
+
+typedef unsigned int cpu_t;
+
 //numero massimo
 #define MAXPROC 20
 #define MAXTHREAD 30
@@ -25,12 +28,11 @@
 //valore massimo della richiesta
 #define MAX_REQUEST_VALUE 13
 
-
 //VARIABILI GLOBALI
 int thread_count;
 int soft_block_count;
 struct tcb_t* current_thread;
-unsigned int process_TOD;
+cpu_t process_TOD;
 
 
 struct list_head ready_queue;

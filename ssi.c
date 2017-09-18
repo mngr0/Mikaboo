@@ -166,7 +166,7 @@ void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
 	//la risposta è il valode del cputime del thread che lo ha chiesto
 	*reply=sender->cpu_time;
 }
-unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
+cpu_t ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	*reply=(unsigned int)NULL;
 	//azzero il tempo passato dall' inizio dell' attesa
 	sender->elapsed_time = 0;

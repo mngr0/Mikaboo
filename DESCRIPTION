@@ -1,8 +1,12 @@
 TODO CHECK TEMPI
-Il nostro progetto è composto da 6 file principali, più ovviamente i file di test che dovranno essere svolti.
+
+MIKABOO
+
+Il nostro progetto è composto da 6 file principali, sommati ai file di test che dovranno essere svolti.
 Ogni file C ha il corrispondente header dove sono descritte le funzioni.
 Il file const.h contiene tutte le variabili globali che verranno utilizzate nel programma e tutti i #define utili alla comprensione del codice.
 
+INTRODUZIONE
 
 Una breve panoramica dei file: boot.c si occupa della inizializzazione delle strutture basi(create in phase1 nel file mikabooq.c), delle aree di memoria dedicate, del SSI e del programma test. 
 Successivamente è il momento dello scheduler.c che si occupa di settare a current_thread un thread della ready queue o, se possibile, dare precedenza all SSI. Si occupa inoltre di controllare i casi di terminazione, e di settare e controllare i time slice e la pseudo_clock queue.
@@ -12,21 +16,24 @@ Non sempre è l'ssi a dover rispondere al thread che ha invocato il servizio, pu
 In exception.c vi è la gestione degli handler: system, program e tlb. Si trovano al suo interno le funzioni per inviare e ricevere messaggi, per mettere un processo nella ready queue(svegliarlo) o per metterlo nella wait queue(addormentarlo).
 Interrupt.c invece gestisce gli interrupt attraverso inthandler; al suo interno vi è una struttura usata per gestire le code dei device, dei terminali. Vi è anche il controllo sui time slice e la funzione ack gestisce le risposte dei device.
 
+MIKABOOQ
+
 Piccolo inciso che riguarda modifiche effettuate a phase1(mikabooq.c)per poter implementare tutti i servizi richiesti: i processi ora contengono tre puntatori ai propri manager: system, tlb e prg. Anche i thread possiedono quattro nuovi campi, un campo è l'error number, un altro è un puntatore ad un pcb in caso che il thread sia un manager mentre gli ultimi due riguardano i tempi:cpu time esprime il tempo per il quale il thread ha occupato la CPU, mentre elapsed time esprime il tempo di attesa da quando c'è stata una chiamata alla wait for clock.
 Inoltre abbiamo creato la reset state che setta tutti i campi di uno state a 0, la thread_in_queue che controlla se un thread è presente in una determinata coda oppure no.
 
 Ora è il momento di guardare in maniera dettagliata i singoli file di questa phase e ancora più precisamente, le singole funzioni.
 
+BOOT
 
 Partiamo nuovamente da boot.c
-
 Il main verrà eseguito una sola volta, il controllo non tornerà mai al boot ma rimbalzerà tra gli altri file.
 Vengono inizializzate i device, le strutture create da mikabooq e successivamente le 4 aree di memoria con i relativi handler.
 Vengono creati i processi SSI e test e i relativi thread: in particolare gli interrupt sono abilitati e hanno lo status di kernel mode.
 Successivamente, prima di eseguire lo scheduler per la prima volta, vengono posti nella ready queue.
 Non vi sono scelte progettuali in questa sezione, escludendo la funzione init_dev_ctrl che crea le code per i device.
-
 Seguendo l'ordine, il prossimo file è lo scheduler.c
+
+SCHEDULER
 
 La funzione principale si chiama scheduler() e ha due compiti principali: gestire i casi di deadlock/wait/halt della macchina, e caricare il processo corrente. Abbiamo preso la decisione che il processo corrente è sempre, se possibile, l SSI in modo da velocizzare l'esecuzione attraverso la funzione ssi_priority.
 Questa funzione estrae dalla ready queue l ssi se presente altrimenti il primo processo in coda.
@@ -34,6 +41,8 @@ Ad ogni chiamata dello scheduler viene settato il prossimo timer e la funzione c
 Caso uno) è finito il time slice e setto il time successivo; caso due) il primo processo della pseudo clock queue deve attendere un tempo minore di un time slice: setto il timer a il tempo rimasto dello pseudo clock; caso tre) il primo processo della pseudo clock queue deve attendere un tempo maggiore di un time slice: setto il primo timer al time slice.
 Questo avviene perchè essendo una coda fifo che tiene conto dei tempi dei thread necessarriamente, scorrendola i temppi (elapsed time) aumentino; quindi se il primo è maggiore del time slice di conseguenza anche tutti gli altri lo saranno.
 La funzione is_time_slice invece è solo di supporto(al timer handler)e controlla se è finito o meno il timeslice del thread ed è stata inserita in questo file poichè usa delle variabili strettamente locali.
+
+SSI
 
 SSI.c si occupa di gestire tutti i servizi che li richiedono e la sua funzione principale è SSI_main_task: controlla se è una richiesta accettabile e in caso affermativo, chiama la funzione corrispondente e inserisce in reply la risposta.
 Ci sono due possibilità, che main_task restituisca True o False: 
@@ -67,7 +76,7 @@ ogni device occupa 2 word, anche se i terminali hanno una word dedicata all' inp
 DEV_FIELD_SIZE vale 4, (4 byte in una word), ottengo (indice del device)*2, e (indice del device)*2+1 in caso di scrittura su device.
 se (in caso di terminale) dev_numb%2==1 allora è scrittura e lo incoderò nella sua coda dedicata. 
 
-
+EXCEPTION
 
 In exception.c ci sono varie funzioni "di supporto":put_thred_sleep and wake_me_up sono una l'opposto dell'altra: mentre la prima posiziona un thread nella wait_queue e aumenta il numero di softblock la seconda sposta nella ready_queue e diminuisci il numero di processi softblockati.
 Un'altra con un compito nato da una esigenza particolare è check_thread_alive. Mentre la check_death si occupa di svegliare thread che erano in attesa di un thread ucciso, la check_thread_alive controlla che non si voglia inviare ad un thread che non fa parte di quelli vivi: se non esiste, allora il messaggio non viene spedito e nel campo apposito err_numb viene settato l'errore.
@@ -85,7 +94,7 @@ La send prima di tutto controlla che non si stia inviando ad un morto, successiv
 Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se è disponibile un messaggio dal mittente richiesto. Se c'è un messaggio disponibile va messo nella wait queue, settati i campi e non va avanzato di una wordsize; se invece la msgq_get va a buon fine, carico i vari campi in maniera adeguata e faccio il load del processo.
 Tutti i casi di errore di questa sezione vengono risolti con l'uccisione del thread.
 
-
+INTERRUPT
 
 L'ultimo file che è rimasto da descrivere è interrupts.c e come enuncia il nome, si occupa di gestire tutti gli interrupt che arrivano da parte dei device virtuali di uArm. La funzione principale è int_handler la quale controlla la causa dell'interrupt e a seconda del tipo di interrupt ricevuto chiama la funzione adeguata per poi richiamare lo scheduler e far continuare l'esecuzione del programma.
 Tutti gli interrupt vengono gestiti dal device_handler, escludendo la causa TIMER che viene gestita dal timer_handler, essa viene causata quando finisce un time slice o uno pseudo clock, se è finito il time slice cambio il thread in esecuzione.
@@ -97,7 +106,7 @@ Per individuare il thread a cui rispondere abbiamo preparato una coda per ogni d
 Il thread è poi da riportare nella giusta coda di appartenenza (wait o ready), poteva essere in ready queue se il suo timeslice è finito subito dopo la send e il device ha risposto prima che il thread facesse la receive; altrimenti era nella wait queue.
 I terminali hanno una gestione leggermente differente e per questa ragione hanno la loro funzione specifica: oltre ai controlli base dei device vi è pure il controllo se la richiesta è di scrittura o di lettura.
 
-
+NUOVI TEST
 
 Inoltre abbiamo portato un ulteriore test: ha le stesse funzioni del test base solamente che ogni funzione è abbinata ad un terminale e in questo modo possono tutti lavorare in maniera parallela e testare anche tutti i terminali.
 

@@ -2,8 +2,8 @@
 #include "const.h"
 #include "exceptions.h"
 
-unsigned int slice_TOD = 0;
-unsigned int last_TOD=0;
+cpu_t slice_TOD = 0;
+cpu_t last_TOD=0;
 
 //inizializzazione liste di attesa dei device
 
@@ -12,7 +12,7 @@ int is_time_slice(){
     return (SCHED_TIME_SLICE - (getTODLO() - slice_TOD) <= 0);
 }
 //setta il pseudoclock in ogni thread
-void set_pseudo_clock(unsigned int TODLO,int time_until_slice){
+void set_pseudo_clock(cpu_t TODLO,int time_until_slice){
     struct tcb_t *iterator=NULL;
     for_each_thread_in_q(iterator,&wait_pseudo_clock_queue){
         iterator->elapsed_time+=TODLO-last_TOD;
@@ -38,7 +38,7 @@ void set_pseudo_clock(unsigned int TODLO,int time_until_slice){
 
 //setta il prossimo timer se è dello pseudoclock o time slice finito
 void set_next_timer(){
-    unsigned int TODLO = getTODLO();
+    cpu_t TODLO = getTODLO();
     // Calcola il tempo trascorso dall'inizio del time slice corrente 
     int time_until_slice = SCHED_TIME_SLICE - (TODLO - slice_TOD);
     // Se il time slice è appena teminato setta il prossimo 
@@ -58,13 +58,15 @@ void set_next_timer(){
 //controlla se è possibile dare precedenza all ssi nell'incodamento
 void ssi_priority(){
     if(thread_in_queue(&ready_queue,SSI)){  
-        struct tcb_t* iterator=NULL;
+        /*struct tcb_t* iterator=NULL;
         for_each_thread_in_q(iterator,&ready_queue){
             current_thread=thread_dequeue(&ready_queue);
             if(current_thread==SSI)
                 break;
             thread_enqueue(current_thread,&ready_queue);
         }
+        */
+        current_thread=SSI;
     }
     else{   
         current_thread = thread_dequeue(&ready_queue);

@@ -2,9 +2,15 @@
 #define MIKABOOQ_H
 
 #include <uARMtypes.h>
+
 #include <listx.h>
-#include "const.h"
 #include <stdint.h>
+#include "const.h"
+
+typedef unsigned int cpu_t;
+#define T_STATUS_NONE  0    /* unused thread descriptor */
+#define T_STATUS_READY 1
+#define T_STATUS_W4MSG 4
 
 struct pcb_t {
 	struct pcb_t * p_parent ; /* pointer to parent */
@@ -14,10 +20,6 @@ struct pcb_t {
 	struct list_head p_siblings; /* link the other siblings (children of p_parent) */
 	struct tcb_t *prg_mgr, *sys_mgr,*tlb_mgr;
 };
-
-#define T_STATUS_NONE  0    /* unused thread descriptor */
-#define T_STATUS_READY 1
-#define T_STATUS_W4MSG 4
 
 struct tcb_t {
 	struct pcb_t *t_pcb; /* pointer to the process */
@@ -31,8 +33,8 @@ struct tcb_t {
 	struct list_head t_sched; /* link the other elements on the same scheduling list */
 	struct list_head t_msgq; /* list of pending messages for the current thread */
 
-	unsigned int cpu_time;
-	unsigned int elapsed_time;
+	cpu_t cpu_time;
+	cpu_t elapsed_time;
 	unsigned int err_numb;
 	struct pcb_t* who_is_managing;
 };
