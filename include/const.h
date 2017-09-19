@@ -34,8 +34,8 @@ typedef unsigned int cpu_t;
 //valore massimo della richiesta
 #define MAX_REQUEST_VALUE 13
 //MACRO
-#define GET_TYPE ((dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START)
-#define GET_NUMB (((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE)
+#define GET_TYPE(dev_reg) ((dev_reg-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START)
+#define GET_NUMB(dev_reg) (((dev_reg-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE)
 #define ACTION_ON_DEVICE(addr) \
 	*( (*(addr+1) + DATA1_REG_OFFSET) ) = (uintptr_t)*(addr+4); \
 	*( (*(addr+1) + DATA0_REG_OFFSET) ) = (uintptr_t)*(addr+3); \

@@ -184,8 +184,8 @@ void BP(){}
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
-	unsigned int dev_type=GET_TYPE;
-	unsigned int dev_numb=GET_NUMB;
+	unsigned int dev_type=GET_TYPE(dev_reg_com);
+	unsigned int dev_numb=GET_NUMB(dev_reg_com);
 	//a questo punto dev_numb indica l' indice del campo COMMAND del device
 	//equivale a (indice del device)*2 per tutti i device, 
 	//tranne per i terminali in scrittura, dove vale (indice del device)*2+1
