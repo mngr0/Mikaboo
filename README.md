@@ -34,6 +34,11 @@ in action, bring up Terminal by clicking 'Terminals' button then choose Terminal
 
 Press the play button to run the machine.
 
+###P2P###
+
+We have created a new test that has the abily to test each thread parallelly to each terminal:
+To do this you have to use the command( $ make parallel)
+
 ###Links###
 uArm Emulator http://mellotanica.github.io/uARM/
 
