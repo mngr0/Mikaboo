@@ -182,6 +182,7 @@ cpu_t ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
+
 	unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
 	unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE;
 	//a questo punto dev_numb indica l' indice del campo COMMAND del device
@@ -204,11 +205,35 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	memaddr *base;
 	switch (dev_type){
 		case IL_DISK:
+			//write data0 on device, write command
+			base=(memaddr *) ( dev_reg_com+DATA0_REG_OFFSET);
+			*base= *(msg_ssi+3);
+			base=(memaddr *) ( dev_reg_com+COMMAND_REG_OFFSET);
+			*base = *(msg_ssi+2);
+
+			
 			break;
 		case IL_TAPE:
+			//write data0 on device, write command
+			base=(memaddr *) ( dev_reg_com+DATA0_REG_OFFSET);
+			*base= *(msg_ssi+3);
+			base=(memaddr *) ( dev_reg_com+COMMAND_REG_OFFSET);
+			*base = *(msg_ssi+2);
+
 			break;
 		case IL_ETHERNET:
+
+		
 			break;
+
+		case IL_PRINTER:
+			//write data0 on device, write command
+			base=(memaddr *) ( dev_reg_com+DATA0_REG_OFFSET);
+			*base= *(msg_ssi+3);
+			base=(memaddr *) ( dev_reg_com+COMMAND_REG_OFFSET);
+			*base = *(msg_ssi+2);
+			break;
+
 		case IL_TERMINAL:
 			base = (memaddr *) ( dev_reg_com);
 			*(base) = *(msg_ssi+2);
