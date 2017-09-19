@@ -15,17 +15,17 @@ typedef unsigned int cpu_t;
 #define ERR_SEND_TO_DEAD 1
 #define ERR_RECV_FROM_DEAD 2
 #define ERR_MSQ_FULL 3
-//offset del terminale
-#define TERM_STATUS_READ   0x00000000
-#define TERM_COMMAND_READ   0x00000004
-#define TERM_STATUS_WRITE   0x00000008
-#define TERM_COMMAND_WRITE   0x0000000C
+
 //offset degli altri device
 #define STATUS_REG_OFFSET 0x00 
 #define COMMAND_REG_OFFSET 0x04 //dev_cmd_offset
 #define DATA0_REG_OFFSET 0x08 
 #define DATA1_REG_OFFSET 0x0C 
-
+//offset del terminale
+#define TERM_STATUS_READ   STATUS_REG_OFFSET
+#define TERM_COMMAND_READ   COMMAND_REG_OFFSET
+#define TERM_STATUS_WRITE   DATA0_REG_OFFSET
+#define TERM_COMMAND_WRITE   DATA1_REG_OFFSET
 
 #define DEV_FIELD_SIZE (WS*2)//ogni device occupa 4=DEV_REG_SIZE word, ma i registri usati solo due
 //Tempi
@@ -33,7 +33,9 @@ typedef unsigned int cpu_t;
 #define SCHED_PSEUDO_CLOCK 100000
 //valore massimo della richiesta
 #define MAX_REQUEST_VALUE 13
-
+//MACRO
+#define GET_TYPE ((dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START)
+#define GET_NUMB (((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE)
 //VARIABILI GLOBALI
 int thread_count;
 int soft_block_count;
