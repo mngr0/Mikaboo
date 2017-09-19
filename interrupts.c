@@ -5,12 +5,6 @@
 
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
-
-
-//calcola la giusta lista di attesa per il dato device, e ne restituisce un puntatore
-struct list_head* select_io_queue(unsigned int dev_type, unsigned int dev_numb) {
-	return &device_list[(dev_type-DEV_IL_START)*DEV_PER_INT+dev_numb];
-}
 //gestisco gli interrupt
 void int_handler(){
 	//devo ritornare all' istruzione precedente siccome gli interrupt vengono catturati dopo l' incremento del pc
@@ -84,8 +78,7 @@ void timer_handler(){
 //manda un segnale di acknowledge al thread che è in attesa da un device
 void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
 	(*command_reg) = DEV_C_ACK;
-	struct list_head* dev=select_io_queue( dev_type,dev_numb);
-	struct tcb_t * thread_dev=thread_dequeue(dev);
+	struct tcb_t * thread_dev=ELEM_IN_DEVICE_LIST(dev_type,dev_numb);
 	if(thread_dev!=NULL){
 		if (thread_dev->t_status==T_STATUS_READY){
 			thread_enqueue(thread_dev,&ready_queue);
@@ -94,6 +87,7 @@ void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
 			thread_enqueue(thread_dev,&wait_queue);
 		}
 		sys_send_msg(SSI,thread_dev,status);
+		ELEM_IN_DEVICE_LIST(dev_type,dev_numb)=NULL;
 	}
 }
 

@@ -178,6 +178,9 @@ cpu_t ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
 	return FALSE;
 }
+
+void BP(){}
+
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
@@ -194,12 +197,15 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	}
 	//passo da (indice del device)*2 a (indice del device)
 	dev_numb/=2;
-	struct list_head* queue;
-	queue=select_io_queue(dev_type,dev_numb);
+	struct tcb_t* queue=ELEM_IN_DEVICE_LIST(dev_type,dev_numb);
+	if(queue!=NULL){
+		BP();
+	}
+	ELEM_IN_DEVICE_LIST(dev_type,dev_numb)=sender;
 	thread_outqueue(sender);
 	if(sender->t_status==T_STATUS_READY)
 		soft_block_count++;
-	thread_enqueue(sender , queue );
+	
 	memaddr *base;
 	switch (dev_type){
 		case IL_DISK:

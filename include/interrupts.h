@@ -1,8 +1,7 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
-//struttura
-struct list_head* select_io_queue(unsigned int deviceType, unsigned int deviceNumber);
 //funzioni
+
 void int_handler();
 int get_priority_dev(memaddr* line);
 void timer_handler();

@@ -40,8 +40,11 @@ typedef unsigned int cpu_t;
 	*( (*(addr+1) + DATA1_REG_OFFSET) ) = (uintptr_t)*(addr+4); \
 	*( (*(addr+1) + DATA0_REG_OFFSET) ) = (uintptr_t)*(addr+3); \
 	*( (*(addr+1) + COMMAND_REG_OFFSET) ) = (uintptr_t)*(addr+2) 
+#define INDEX_IN_DEVICE_LIST(type, num) \
+	((type-DEV_IL_START)*DEV_PER_INT+num)
 
-
+#define ELEM_IN_DEVICE_LIST(type, num) \
+	device_list[((type-DEV_IL_START)*DEV_PER_INT+num)]
 //VARIABILI GLOBALI
 int thread_count;
 int soft_block_count;
@@ -52,5 +55,5 @@ cpu_t process_TOD;
 struct list_head ready_queue;
 struct list_head wait_queue;
 struct list_head wait_pseudo_clock_queue;
-struct list_head device_list[(DEV_USED_INTS+1)*DEV_PER_INT];//+1 perche i terminali contano doppio, hanno sia tx che rx
+struct tcb_t* device_list[(DEV_USED_INTS+1)*DEV_PER_INT];//+1 perche i terminali contano doppio, hanno sia tx che rx
 #endif

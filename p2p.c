@@ -288,7 +288,7 @@ void test(void) {
     msgsend(p7tt,SYNCCODE);
     msgsend(p8tt,SYNCCODE);
 
-    for(j=0;j<8;j++){
+    for(j=0;j<7;j++){
         msgrecv(NULL,NULL);
     }
     
@@ -338,8 +338,7 @@ void p2(void) {
 
     panic("p2 survived TERMINATE_THREAD\n");
 }
-void AA(){}
-void AB(){}
+
 cputime time1, time2,ptimePRE,ptimePOST,waste[NWAIT];
 void p3(void) {
     ttyNprint(2,"p3 started\n");
@@ -350,12 +349,10 @@ void p3(void) {
     //time2=time1;
     for (i = 0; i < NWAIT; i++) {
         ptimePRE=getTODLO();
-        AA();
         waitforclock();
         ptimePOST=getTODLO();
         //time2+=ptimePOST-ptimePRE;
         waste[i]=(ptimePOST - ptimePRE)-PSEUDOCLOCK;
-        AB();
     }
     time2 = getTODLO();
     if ((time2 - time1) < (PSEUDOCLOCK * (NWAIT - 1))) {
