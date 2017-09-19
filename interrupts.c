@@ -92,7 +92,6 @@ void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
 
 	}else{
 		thread_enqueue(thread_dev,&wait_queue);
-
 	}
 	sys_send_msg(SSI,thread_dev,status);
 }
