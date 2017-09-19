@@ -178,14 +178,6 @@ cpu_t ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	thread_enqueue(sender,&wait_pseudo_clock_queue);
 	return FALSE;
 }
-void action_on_device(unsigned int dev_reg_com, unsigned int msg_ssi){
-	//write data0 on device, write command
-	memaddr *base;
-	base=(memaddr *) ( dev_reg_com+DATA0_REG_OFFSET);
-	*base= *(msg_ssi+3);
-	base=(memaddr *) ( dev_reg_com+COMMAND_REG_OFFSET);
-	*base = *(msg_ssi+2);
-}
 //gestisco l input output
 unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	unsigned int dev_reg_com= *(msg_ssi+1);
@@ -211,18 +203,16 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	memaddr *base;
 	switch (dev_type){
 		case IL_DISK:
-			action_on_device(dev_reg_com,msg_ssi);
+			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
 			break;
 		case IL_TAPE:
-			action_on_device(dev_reg_com,msg_ssi);
+			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
 			break;
 		case IL_ETHERNET:
-			base=(memaddr *) ( dev_reg_com+DATA1_REG_OFFSET);
-			*base = *(msg_ssi+4);
-			action_on_device(dev_reg_com,msg_ssi);
+			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
 			break;
 		case IL_PRINTER:
-			action_on_device(dev_reg_com,msg_ssi);
+			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
 			break;
 		case IL_TERMINAL:
 			base = (memaddr *) ( dev_reg_com);

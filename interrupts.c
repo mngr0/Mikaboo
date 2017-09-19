@@ -21,11 +21,11 @@ void int_handler(){
 	}
 	//guardo la causa dell' interrupt
 	int cause = getCAUSE();
-	//timer 
+	//timer
 	if (CAUSE_IP_GET(cause, IL_TIMER)){
 		timer_handler();
 	}
-	//disk 
+	//disk
 	else if (CAUSE_IP_GET(cause, IL_DISK)){
 		device_handler(IL_DISK);
 	}
@@ -40,7 +40,7 @@ void int_handler(){
     //printer
 	else if (CAUSE_IP_GET(cause, IL_PRINTER)){
 		device_handler(IL_PRINTER);
-	} 
+	}
     //terminal 
 	else if (CAUSE_IP_GET(cause, IL_TERMINAL)){
 		terminal_handler();
