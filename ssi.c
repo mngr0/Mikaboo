@@ -222,8 +222,13 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 
 			break;
 		case IL_ETHERNET:
+			base=(memaddr *) ( dev_reg_com+DATA0_REG_OFFSET);
+			*base= *(msg_ssi+3);
+			base=(memaddr *) ( dev_reg_com+DATA1_REG_OFFSET);
+			*base = *(msg_ssi+4);
+			base=(memaddr *) ( dev_reg_com+COMMAND_REG_OFFSET);
+			*base = *(msg_ssi+2);
 
-		
 			break;
 
 		case IL_PRINTER:

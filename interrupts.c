@@ -86,14 +86,15 @@ void ack(int dev_type, int dev_numb, unsigned int status, memaddr *command_reg){
 	(*command_reg) = DEV_C_ACK;
 	struct list_head* dev=select_io_queue( dev_type,dev_numb);
 	struct tcb_t * thread_dev=thread_dequeue(dev);
-	if (thread_dev->t_status==T_STATUS_READY){
-		thread_enqueue(thread_dev,&ready_queue);
-		soft_block_count--;
-
-	}else{
-		thread_enqueue(thread_dev,&wait_queue);
+	if(thread_dev!=NULL){
+		if (thread_dev->t_status==T_STATUS_READY){
+			thread_enqueue(thread_dev,&ready_queue);
+			soft_block_count--;			
+		}else{
+			thread_enqueue(thread_dev,&wait_queue);
+		}
+		sys_send_msg(SSI,thread_dev,status);
 	}
-	sys_send_msg(SSI,thread_dev,status);
 }
 
 
