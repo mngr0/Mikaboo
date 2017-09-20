@@ -180,22 +180,10 @@ void check_terms(unsigned int* terms){
     int i,r;
     struct tcb_t* myself=get_mythreadid();
     for(i=0;i<8;i++){
-        struct {
-            uintptr_t reqtag;
-            devaddr device;
-            uintptr_t command;
-            uintptr_t data1;
-            uintptr_t data2;
-        } req = {DO_IO, TERM0ADDR+ (DEV_REG_SIZE * i), DEV_TTRS_C_TRSMCHAR | ('t' << 8), 0, 0};
-        msgsend(SSI, &req);
-        waitforclock();
-        msgsend(myself,0xf0);
-        senderu=msgrecv(NULL,&r);
-        if(senderu==SSI){
+        if(*( (memaddr*)(TERM0ADDR- TERM_COMMAND_WRITE + (DEV_REG_SIZE * i) ) ) ){
             (*terms) |=(1<<i);
-            msgrecv(NULL,&r);
-            ttyprintstring(TERM0ADDR+ (DEV_REG_SIZE * i), "erminal open\n");
-        }
+             ttyprintstring(TERM0ADDR+ (DEV_REG_SIZE * i), "terminal open\n");
+        }    
     }
 }
 
