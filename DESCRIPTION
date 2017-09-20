@@ -1,6 +1,6 @@
 MIKABOO
 
-Il nostro progetto è composto da 6 file principali, sommati ai file di test che dovranno essere svolti.
+Il progetto è composto da 6 file principali, sommati ai file di test che dovranno essere svolti.
 Ogni file C ha il corrispondente header dove sono descritte le funzioni.
 Il file const.h contiene tutte le variabili globali che verranno utilizzate nel programma e tutti i #define utili alla comprensione del codice.
 
@@ -12,14 +12,14 @@ SSI.c contiene tutte le funzioni necessarie a gestire i servizi.
 Funzioni che non si occupano di rispondere direttamente al servizio richiesto, sono la check_death che controlla e sveglia se,una volta ucciso un thread, ci sono altri thread in attesa di un messaggio da quello ucciso. La exterminate thread e process si occupano di terminare rispettivamente un thread e/o un processo, con delle particolari scelte di progettazione che descriveremo precisamente dopo.
 Non sempre è l'ssi a dover rispondere al thread che ha invocato il servizio, può succedere che sia un handler a dovere mandare il messaggio di risposta o un terminale che mandi l'acknowledge.
 In exception.c vi è la gestione degli handler: system, program e tlb. Si trovano al suo interno le funzioni per inviare e ricevere messaggi, per mettere un processo nella ready queue(svegliarlo) o per metterlo nella wait queue(addormentarlo).
-Interrupt.c invece gestisce gli interrupt attraverso inthandler; al suo interno vi è una struttura usata per gestire le code dei device, dei terminali. Vi è anche il controllo sui time slice e la funzione ack gestisce le risposte dei device.
+Interrupt.c invece gestisce gli interrupt attraverso inthandler; al suo interno vi sono le chiamate alle macro per gestire correttamente i device e una funzione per gestire i time slice.
 
 MIKABOOQ
 
 Piccolo inciso che riguarda modifiche effettuate a phase1(mikabooq.c)per poter implementare tutti i servizi richiesti: i processi ora contengono tre puntatori ai propri manager: system, tlb e prg. Anche i thread possiedono quattro nuovi campi, un campo è l'error number, un altro è un puntatore ad un pcb in caso che il thread sia un manager mentre gli ultimi due riguardano i tempi:cpu time esprime il tempo per il quale il thread ha occupato la CPU, mentre elapsed time esprime il tempo di attesa da quando c'è stata una chiamata alla wait for clock.
 Inoltre abbiamo creato la reset state che setta tutti i campi di uno state a 0, la thread_in_queue che controlla se un thread è presente in una determinata coda oppure no.
 
-Ora è il momento di guardare in maniera dettagliata i singoli file di questa phase e ancora più precisamente, le singole funzioni.
+Ora è il momento di guardare in maniera dettagliata i singoli file di questa phase e in alcuni casi, in maniera dettagliata pure le singole funzioni.
 
 BOOT
 
@@ -45,7 +45,7 @@ SSI.c si occupa di gestire tutti i servizi che li richiedono e la sua funzione p
 Ci sono due possibilità, che main_task restituisca True o False: 
 se è True: allora l' ssi deve rispondere al thread che ha richiesto il servizio;
 se è False ci sono varie possibilità:
-se era richiesto un do_io allora il messaggio di risposta proviene dal device_handler o terminal_handler;
+se era richiesto una do_io allora il messaggio di risposta proviene dal device_handler o terminal_handler;
 se era richiesto un waitforclock allora il messaggio di risposta proviene dal timer_handler
 se era richiesto il set di un manager il thread potrebbe essere stato ucciso e quindi non ha bisogna di ricevere una risposta;
 se era stato richiesto un terminate allora il thread è stato ucciso e non deve ricevere una risposta.
@@ -61,19 +61,18 @@ Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thre
 Una funzione che neccessita una spiegazione dettagliata è la SSI_do_io:
 dev_type e dev_numb sono utilizzati per calcolare il device su cui devo operare, tipo e numero e vengono ottenuti attraverso due macro descritte in const.h
 Il dev_type è ottenuto in questo modo:
-unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
+dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
 poichè sottraggo DEV_REG_START per avere l' offset rispetto all' indirizzo iniziale nei device
-DEV_PER_INT*DEV_REG_SIZE è la dimensione occupata da una tipologia di device, dividendo per DEV_PER_INT*DEV_REG_SIZE ottengo il tipo del device, ma mappato male
-sommo DEV_IL_START per avere la stessa mappatura utilizzata da uARM
+DEV_PER_INT*DEV_REG_SIZE è la dimensione occupata da una tipologia di device, dividendo per DEV_PER_INT*DEV_REG_SIZE ottengo il tipo del device, ma mappato male quindi sommo DEV_IL_START per avere la stessa mappatura utilizzata da uARM
 Per ottenere il dev_numb invece devo eseguire queste operazioni:
-unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE;
+dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE;
 cioè: dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET è l' offset del inizio del device (non del campo command)
 facendo il modulo della divisione per DEV_REG_SIZE*DEV_PER_INT ottengo l' offset nel tipo di device (esempio, Tape 4 o 5), misurato in word.
 Ogni device occupa 2 word, anche se i terminali hanno una word dedicata all' input e una all' output, uso questa particolarità per riconoscere se è stata richiesta una lettura o una scrittura,
 DEV_FIELD_SIZE vale 4, (4 byte in una word), ottengo (indice del device)*2, e (indice del device)*2+1 in caso di scrittura su device.
 se (in caso di terminale) dev_numb%2==1 allora è scrittura e lo incoderò nella sua coda dedicata. 
 Utilizzando poi la macro ACTION_ON_DEVICE riempio i campi data0, data1 e infine command per compiere un operazione.
-La macro presuppone che il parametro(addr) sia il messaggio ricevuto dalla DO_IO del nucleus.
+La macro presuppone che il parametro(addr) sia il messaggio ricevuto dalla DO_IO del nucleo.
 
 EXCEPTION
 
@@ -81,13 +80,11 @@ In exception.c ci sono varie funzioni "di supporto":put_thread_sleep and wake_me
 Un'altra con un compito nato da una esigenza particolare è check_thread_alive. Mentre la check_death si occupa di svegliare thread che erano in attesa di un thread ucciso, la check_thread_alive controlla che non si voglia inviare ad un thread che non fa parte di quelli vivi: se non esiste, allora il messaggio non viene spedito e nel campo apposito err_numb viene settato l'errore.
 Sys_send_msg si occupa di inviare un messaggio da un thread ad un altro, ma ha una particolarità in più:se il ricevente aspetta già un messaggio dal mittente, non viene incodato in messaggio ma viene direttamente svegliato il thread in attesa.
 Ora è il momento di descrivere i tre handler: 
-tlb_handler (gestisce i tlb miss) e pgm_handler (gestisce le trap)
-vengono chiamati quando si verifica un tlb miss o una trap,
-controllano se il causante ha definito un manager e in caso affermativo,
-mettono nella wait queue il thread corrente, svegliando il manager.
-Il thread è risvegliabile solo dal manager, ma non ha fatto una receive, sarà il manager a occuparsi di risolvere la trap o caricare la pagina richiesta.
+tlb_handler (gestisce i tlb miss) e pgm_handler (gestisce le trap) vengono chiamati quando si verifica un tlb miss o una trap,
+controllano se il causante ha definito un manager e in caso affermativo, mettono nella wait queue il thread corrente, svegliando il manager.
+Il thread è risvegliabile solo dal manager, ma non ha fatto una receive perciò sarà il manager a occuparsi di risolvere la trap o caricare la pagina richiesta.
 
-Il terzo handler, sys_bp_handler, è la funzione cuore del file:essa viene invocata quando un thread richiede un servizio o una system call(send recv).
+Il terzo handler, sys_bp_handler, è la funzione cuore del file: essa viene invocata quando un thread richiede un servizio o una system call(send recv).
 E' necessario quindi controllare i permessi del thread: se è in user mode e richiede una system call, deve essere invocato il suo system manager; se è provocata una trap, il program manager; se è in kernel mode invece, può mandare direttamente send e recv.
 La send prima di tutto controlla che non si stia inviando ad un morto, successivamente controlla se il messaggio è la risposta di un manager Uper risvegliare il thread) e altrimenti si manda la send con la funzione apposita e si avanza di una word size per evitare di rientrare nel codice della syscall.
 Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se è disponibile un messaggio dal mittente richiesto. Se c'è un messaggio disponibile va messo nella wait queue, settati i campi e non va avanzato di una wordsize; se invece la msgq_get va a buon fine, carico i vari campi in maniera adeguata e faccio il load del processo.
@@ -105,9 +102,10 @@ Per individuare il thread a cui rispondere abbiamo preparato una coda per ogni d
 Il thread è poi da riportare nella giusta coda di appartenenza (wait o ready), poteva essere in ready queue se il suo timeslice è finito subito dopo la send e il device ha risposto prima che il thread facesse la receive; altrimenti era nella wait queue.
 I terminali hanno una gestione leggermente differente e per questa ragione hanno la loro funzione specifica: oltre ai controlli base dei device vi è pure il controllo se la richiesta è di scrittura o di lettura.
 
-NUOVI TEST
+P2P
 
-Inoltre abbiamo portato un ulteriore test: ha le stesse funzioni del test base solamente che ogni funzione è abbinata ad un terminale e in questo modo possono tutti lavorare in maniera parallela e testare anche tutti i terminali.
+Inoltre abbiamo portato un ulteriore test:p2p.c
+Esso ha le stesse funzioni del test base solamente che ogni funzione è abbinata ad un terminale e in questo modo possono tutti lavorare in maniera parallela e testare anche tutti i terminali.
 
 
 
