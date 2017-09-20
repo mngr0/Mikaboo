@@ -1,7 +1,4 @@
-mngr0 has been a contributor, but mistakes were made!
 TODO CHECK TEMPI
-TODO ACTION ON DEVICE
-
 MIKABOO
 
 Il nostro progetto è composto da 6 file principali, sommati ai file di test che dovranno essere svolti.
@@ -32,7 +29,6 @@ Il main verrà eseguito una sola volta, il controllo non tornerà mai al boot ma
 Vengono inizializzate i device, le strutture create da mikabooq e successivamente le 4 aree di memoria con i relativi handler.
 Vengono creati i processi SSI e test e i relativi thread: in particolare gli interrupt sono abilitati e hanno lo status di kernel mode.
 Successivamente, prima di eseguire lo scheduler per la prima volta, vengono posti nella ready queue.
-Non vi sono scelte progettuali in questa sezione, escludendo la funzione init_dev_ctrl che crea le code per i device.
 Seguendo l'ordine, il prossimo file è lo scheduler.c
 
 SCHEDULER
@@ -64,7 +60,7 @@ Nelle funzioni che eliminano processi/thread, vi è pure la chiamata ad una funz
 Essa si occupa di controllare se, una volta ucciso un thread, ci sono altri thread in attesa di una risposta da questo. Se la risposta è affermativa, setta il loro err_numb e li sveglia con un messaggio inviato dall'SSI. 
 
 Una funzione che neccessita una spiegazione dettagliata è la SSI_do_io:
-dev_type e dev_numb sono utilizzati per calcolare il device su cui devo operare, tipo e numero
+dev_type e dev_numb sono utilizzati per calcolare il device su cui devo operare, tipo e numero e vengono ottenuti attraverso due macro descritte in const.h
 Il dev_type è ottenuto in questo modo:
 unsigned int dev_type=(dev_reg_com-DEV_REG_START)/(DEV_PER_INT*DEV_REG_SIZE)+DEV_IL_START;
 poichè sottraggo DEV_REG_START per avere l' offset rispetto all' indirizzo iniziale nei device
@@ -73,10 +69,12 @@ sommo DEV_IL_START per avere la stessa mappatura utilizzata da uARM
 Per ottenere il dev_numb invece devo eseguire queste operazioni:
 unsigned int dev_numb=((dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET)%(DEV_REG_SIZE*DEV_PER_INT))/DEV_FIELD_SIZE;
 cioè: dev_reg_com-DEV_REG_START-COMMAND_REG_OFFSET è l' offset del inizio del device (non del campo command)
-facendo il modulo della divisione per DEV_REG_SIZE*DEV_PER_INT ottengo l' offset nel tipo di device (esempio, Tape 4 o 5), misurato in word
-ogni device occupa 2 word, anche se i terminali hanno una word dedicata all' input e una all' output, uso questa particolarità per riconoscere se è stata richiesta una lettura o una scrittura,
+facendo il modulo della divisione per DEV_REG_SIZE*DEV_PER_INT ottengo l' offset nel tipo di device (esempio, Tape 4 o 5), misurato in word.
+Ogni device occupa 2 word, anche se i terminali hanno una word dedicata all' input e una all' output, uso questa particolarità per riconoscere se è stata richiesta una lettura o una scrittura,
 DEV_FIELD_SIZE vale 4, (4 byte in una word), ottengo (indice del device)*2, e (indice del device)*2+1 in caso di scrittura su device.
 se (in caso di terminale) dev_numb%2==1 allora è scrittura e lo incoderò nella sua coda dedicata. 
+Utilizzando poi la macro ACTION_ON_DEVICE riempio i campi data0, data1 e infine command per compiere un operazione.
+La macro presuppone che il parametro(addr) sia il messaggio ricevuto dalla DO_IO del nucleus.
 
 EXCEPTION
 
@@ -96,7 +94,7 @@ La send prima di tutto controlla che non si stia inviando ad un morto, successiv
 Anche la recv controlla che si stia ricevendo da un processo esistente e dopo aver fatto la msgq_get controlla se è disponibile un messaggio dal mittente richiesto. Se c'è un messaggio disponibile va messo nella wait queue, settati i campi e non va avanzato di una wordsize; se invece la msgq_get va a buon fine, carico i vari campi in maniera adeguata e faccio il load del processo.
 Tutti i casi di errore di questa sezione vengono risolti con l'uccisione del thread.
 
-INTERRUPTx
+INTERRUPT
 
 L'ultimo file che è rimasto da descrivere è interrupts.c e come enuncia il nome, si occupa di gestire tutti gli interrupt che arrivano da parte dei device virtuali di uArm. La funzione principale è int_handler la quale controlla la causa dell'interrupt e a seconda del tipo di interrupt ricevuto chiama la funzione adeguata per poi richiamare lo scheduler e far continuare l'esecuzione del programma.
 Tutti gli interrupt vengono gestiti dal device_handler, escludendo la causa TIMER che viene gestita dal timer_handler, essa viene causata quando finisce un time slice o uno pseudo clock, se è finito il time slice cambio il thread in esecuzione.

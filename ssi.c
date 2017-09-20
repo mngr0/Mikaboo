@@ -166,6 +166,7 @@ void ssi_getcputime(struct tcb_t* sender, uintptr_t* reply){
 	//la risposta è il valode del cputime del thread che lo ha chiesto
 	*reply=sender->cpu_time;
 }
+
 cpu_t ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	*reply=(unsigned int)NULL;
 	//azzero il tempo passato dall' inizio dell' attesa
@@ -179,10 +180,8 @@ cpu_t ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply){
 	return FALSE;
 }
 
-void BP(){}
-
 //gestisco l input output
-unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
+unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender,uintptr_t* reply){
 	unsigned int dev_reg_com= *(msg_ssi+1);
 	unsigned int dev_type=GET_TYPE(dev_reg_com);
 	unsigned int dev_numb=GET_NUMB(dev_reg_com);
@@ -197,11 +196,14 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	}
 	//passo da (indice del device)*2 a (indice del device)
 	dev_numb/=2;
-	struct tcb_t* queue=ELEM_IN_DEVICE_LIST(dev_type,dev_numb);
-	if(queue!=NULL){
-		BP();
+	//se qualcuno ha già chiesto una operazione su quel device
+	if(ELEM_IN_DEVICE_LIST(dev_type,dev_numb)!=NULL){
+		*reply=DEV_STAT_BUSY;
+		return TRUE;
 	}
+	//segno che il device è occupato in una operazione con il sender
 	ELEM_IN_DEVICE_LIST(dev_type,dev_numb)=sender;
+	//lo tolgo dalla coda precedente
 	thread_outqueue(sender);
 	if(sender->t_status==T_STATUS_READY)
 		soft_block_count++;
@@ -209,16 +211,16 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 	memaddr *base;
 	switch (dev_type){
 		case IL_DISK:
-			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
+			ACTION_ON_DEVICE((memaddr**)msg_ssi);
 			break;
 		case IL_TAPE:
-			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
+			ACTION_ON_DEVICE((memaddr**)msg_ssi);
 			break;
 		case IL_ETHERNET:
-			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
+			ACTION_ON_DEVICE((memaddr**)msg_ssi);
 			break;
 		case IL_PRINTER:
-			ACTION_ON_DEVICE((uintptr_t**)msg_ssi);
+			ACTION_ON_DEVICE((memaddr**)msg_ssi);
 			break;
 		case IL_TERMINAL:
 			base = (memaddr *) ( dev_reg_com);
@@ -229,9 +231,6 @@ unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender){
 			*(base) = *(msg_ssi+2);
 			break;
 	}
-
-
-
 	return FALSE;
 }
 
@@ -295,7 +294,7 @@ unsigned int SSI_main_task(unsigned int * msg_ssi, struct tcb_t* sender ,uintptr
 			return ssi_waitforclock(sender,reply);
 			break;
 		case DO_IO:
-			return ssi_do_io(msg_ssi,sender);
+			return ssi_do_io(msg_ssi,sender,reply);
 			break;
 		case GET_PROCESSID :
 			ssi_get_processid(((struct tcb_t*)*(msg_ssi+1))->t_pcb,reply);

@@ -15,7 +15,7 @@ unsigned int ssi_tlb_managing(struct tcb_t* mgr,struct tcb_t* sender, uintptr_t*
 unsigned int ssi_sys_managing(struct tcb_t* mgr,struct tcb_t* sender,uintptr_t* reply);
 
 unsigned int ssi_waitforclock(struct tcb_t* sender,uintptr_t* reply);
-unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender);
+unsigned int ssi_do_io(uintptr_t * msg_ssi, struct tcb_t * sender,uintptr_t* reply);
 
 void ssi_create_process(state_t* state,struct tcb_t* sender, uintptr_t* reply);
 void ssi_create_thread(state_t * state,struct tcb_t* sender, uintptr_t* reply);

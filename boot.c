@@ -7,13 +7,6 @@
 #include "boot.h"
 
 void * SSI;
-
-void init_dev_ctrl(){
-    int i;
-    for (i=0;i<(DEV_USED_INTS+1)*DEV_PER_INT;i++){
-        device_list[i]=NULL;
-    }
-}
 //inizializza le aree di memoria
 void initArea(memaddr area, memaddr handler){
 	state_t *newArea = (state_t*) area;
@@ -32,7 +25,6 @@ void initArea(memaddr area, memaddr handler){
 //Boot del nostro programma
 int main() {
 	//inizializzazione code devicev       
-	init_dev_ctrl();
 	current_thread=NULL;
 	//Inizializzo liste 
 	INIT_LIST_HEAD(&ready_queue);

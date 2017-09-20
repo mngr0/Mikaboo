@@ -27,6 +27,7 @@ typedef unsigned int cpu_t;
 #define TERM_STATUS_WRITE   DATA0_REG_OFFSET
 #define TERM_COMMAND_WRITE   DATA1_REG_OFFSET
 
+#define DEV_STAT_BUSY 3
 #define DEV_FIELD_SIZE (WS*2)//ogni device occupa 4=DEV_REG_SIZE word, ma i registri usati solo due
 //Tempi
 #define SCHED_TIME_SLICE 5000
@@ -40,11 +41,10 @@ typedef unsigned int cpu_t;
 	*( (*(addr+1) + DATA1_REG_OFFSET) ) = (uintptr_t)*(addr+4); \
 	*( (*(addr+1) + DATA0_REG_OFFSET) ) = (uintptr_t)*(addr+3); \
 	*( (*(addr+1) + COMMAND_REG_OFFSET) ) = (uintptr_t)*(addr+2) 
-#define INDEX_IN_DEVICE_LIST(type, num) \
-	((type-DEV_IL_START)*DEV_PER_INT+num)
 
 #define ELEM_IN_DEVICE_LIST(type, num) \
 	device_list[((type-DEV_IL_START)*DEV_PER_INT+num)]
+
 //VARIABILI GLOBALI
 int thread_count;
 int soft_block_count;
