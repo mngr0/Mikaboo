@@ -96,8 +96,8 @@ struct tcb_t *thread_qhead(struct list_head *queue);
 	 return NULL if the list is empty */
 struct tcb_t *thread_dequeue(struct list_head *queue);
 
-static inline void thread_outqueue(struct tcb_t *this) {
-	list_del(&this->t_sched);
+static inline void thread_outqueue(struct tcb_t *tthis) {
+	list_del(&tthis->t_sched);
 }
 //1 se il thread è presente nella coda, 0 altrimenti
 int thread_in_queue(struct list_head *head, struct tcb_t* this);

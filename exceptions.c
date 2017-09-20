@@ -41,7 +41,6 @@ void put_thread_sleep(struct tcb_t* t){
 		//e lo metto in attesa
 		thread_enqueue(t,&wait_queue);
 		//aggiorno i tempi
-		current_thread->cpu_time+=getTODLO()-process_TOD;
 		if(t==current_thread){
 			current_thread=NULL;
 		}
