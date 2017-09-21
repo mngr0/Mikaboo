@@ -1,4 +1,3 @@
-#include "mikabooq.h"
 /*****************************************************************************
  * mikabooq.c Year 2017 v.0.1 Luglio, 15 2017                              *
  * Copyright 2017 Simone Berni, Marco Negrini, Dorotea Trestini              *
@@ -17,7 +16,7 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,   *
  * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.                  *
  *****************************************************************************/
-
+#include "mikabooq.h"
 struct list_head free_proc;     //free process list
 struct list_head free_thread;   //free thread list
 struct list_head free_msg;	//free msg list
