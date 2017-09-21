@@ -1,3 +1,21 @@
+/*****************************************************************************
+ * mikabooq.c Year 2017 v.0.1 Luglio, 15 2017                              *
+ * Copyright 2017 Simone Berni, Marco Negrini, Dorotea Trestini              *
+ *                                                                           *
+ * This file is part of MiKABoO.                                             *
+ *                                                                           *
+ * MiKABoO is free software; you can redistribute it and/or modify it under  *
+ * the terms of the GNU General Public License as published by the Free      *
+ * Software Foundation; either version 2 of the License, or (at your option) *
+ * any later version.                                                        *
+ * This program is distributed in the hope that it will be useful, but       *
+ * WITHOUT ANY WARRANTY; without even the implied warranty of                *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General *
+ * Public License for more details.                                          *
+ * You should have received a copy of the GNU General Public License along   *
+ * with this program; if not, write to the Free Software Foundation, Inc.,   *
+ * 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.                  *
+ *****************************************************************************/
 #include "scheduler.h"
 #include "const.h"
 #include "exceptions.h"
@@ -55,23 +73,6 @@ void set_next_timer(){
     }
     last_TOD=TODLO;  
 }
-//controlla se è possibile dare precedenza all ssi nell'incodamento
-void ssi_priority(){
-    if(thread_in_queue(&ready_queue,SSI)){  
-        /*struct tcb_t* iterator=NULL;
-        for_each_thread_in_q(iterator,&ready_queue){
-            current_thread=thread_dequeue(&ready_queue);
-            if(current_thread==SSI)
-                break;
-            thread_enqueue(current_thread,&ready_queue);
-        }
-        */
-        current_thread=SSI;
-    }
-    else{   
-        current_thread = thread_dequeue(&ready_queue);
-    }
-}
 //funzione master del file, schedula il processo giusto e controlla i deadlock
 void scheduler() {
 	//setto prossimo timer
@@ -95,8 +96,7 @@ void scheduler() {
      else {
         // Se non c'è nessun Thread in esecuzione ma c'e n'è almeno uno nella ready_queue allora  carico un thread
         if (current_thread == NULL) {
-            //precedenza all'ssi
-            ssi_priority();    
+            current_thread = thread_dequeue(&ready_queue);
         }
         process_TOD=getTODLO();
         LDST(&(current_thread->t_s));

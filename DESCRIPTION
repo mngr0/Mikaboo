@@ -33,7 +33,6 @@ Seguendo l'ordine, il prossimo file è lo scheduler.c
 SCHEDULER
 
 La funzione principale si chiama scheduler() e ha due compiti principali: gestire i casi di deadlock/wait/halt della macchina, e caricare il processo corrente.
-Questa funzione estrae dalla ready queue l ssi se presente altrimenti il primo processo in coda.
 Ad ogni chiamata dello scheduler viene settato il prossimo timer e la funzione che si occupa di ciò è set_next timer: ci sono tre casi possibili che vengono gestiti da questa funzione insieme al supporto della set_pseudo_clock.
 Caso uno) è finito il time slice e setto il time successivo; caso due) il primo processo della pseudo clock queue deve attendere un tempo minore di un time slice: setto il timer a il tempo rimasto dello pseudo clock; caso tre) il primo processo della pseudo clock queue deve attendere un tempo maggiore di un time slice: setto il primo timer al time slice.
 Questo avviene perchè essendo una coda fifo che tiene conto dei tempi dei thread necessarriamente, scorrendola i temppi (elapsed time) aumentino; quindi se il primo è maggiore del time slice di conseguenza anche tutti gli altri lo saranno.
