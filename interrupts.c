@@ -21,7 +21,7 @@
 #include "scheduler.h"
 #include "exceptions.h"
 #include "interrupts.h"
-
+//variabile locale
 state_t *int_old 	 = (state_t*) INT_OLDAREA;
 
 //gestisco gli interrupt

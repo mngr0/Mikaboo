@@ -19,11 +19,9 @@
 #include "scheduler.h"
 #include "const.h"
 #include "exceptions.h"
-
+//variabili locali
 cpu_t slice_TOD = 0;
 cpu_t last_TOD=0;
-
-//inizializzazione liste di attesa dei device
 
 //se è terminato o meno il time slice
 int is_time_slice(){

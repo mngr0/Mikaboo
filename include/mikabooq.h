@@ -2,7 +2,6 @@
 #define MIKABOOQ_H
 
 #include <uARMtypes.h>
-
 #include <listx.h>
 #include <stdint.h>
 #include "const.h"
@@ -15,9 +14,9 @@ typedef unsigned int cpu_t;
 struct pcb_t {
 	struct pcb_t * p_parent ; /* pointer to parent */
 	struct list_head p_threads; /* list of threads */
-
 	struct list_head p_children; /* list of children (hierarchy of processes) */
 	struct list_head p_siblings; /* link the other siblings (children of p_parent) */
+
 	struct tcb_t *prg_mgr, *sys_mgr,*tlb_mgr;
 };
 
@@ -42,7 +41,6 @@ struct tcb_t {
 struct msg_t {
 	struct tcb_t *m_sender; /* sender thread */
 	uintptr_t m_value; /* payload of the message */
-
 	struct list_head m_next; /* link the other elements of the pending message queue */
 };
 void reset_state(state_t *t_s);
