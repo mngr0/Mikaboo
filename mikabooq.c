@@ -96,11 +96,15 @@ int proc_delete(struct pcb_t *oldproc){
 
 
 struct pcb_t *proc_firstchild(struct pcb_t *proc){
+	if(list_empty(&(proc->p_children)))
+		return NULL;
 	struct pcb_t *p=container_of(proc->p_children.next,struct pcb_t,p_siblings); //ritorno il primo figlio
 	return p;
 }
 
 struct tcb_t *proc_firstthread(struct pcb_t *proc){
+	if(list_empty(&(proc->p_threads)))
+		return NULL;
 	struct tcb_t *p=container_of(proc->p_threads.next,struct tcb_t,t_next); //ritorno il primo thread
 	return p;
 }
